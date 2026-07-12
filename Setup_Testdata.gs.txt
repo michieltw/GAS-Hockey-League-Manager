@@ -13,38 +13,6 @@ function runSetup() {
     'SHEET3_ID': docs.LIVE.getId()
   });
 
-  const MAP = {
-    CONFIG: {
-      tabs: {
-        settings: { name: "App_Settings", cols: { key: 1, value: 2 } },
-        ui: { name: "UI_Settings", cols: { settingKey: 1, settingValue: 2, leagueId: 3, description: 4 } },
-        users: { name: "Users", cols: { userId: 1, email: 2, role: 3, linkedLeagueId: 4, status: 5 } },
-        officials: { name: "Officials", cols: { userId: 1, leagueId: 2, permissions: 3 } },
-        scorekeeper: { name: "Scorekeeper_Settings", cols: { configKey: 1, configValue: 2 } }
-      }
-    },
-    DATA: {
-      tabs: {
-        leagues: { name: "Leagues", cols: { id: 1, name: 2, season: 3, status: 4 } },
-        divisions: { name: "Divisions", cols: { id: 1, leagueId: 2, name: 3 } },
-        teams: { name: "Teams", cols: { id: 1, leagueId: 2, divId: 3, name: 4, managerId: 5, logo: 6 } },
-        players: { name: "Players", cols: { id: 1, teamId: 2, name: 3, number: 4, pos: 5, xp: 6, status: 7 } },
-        season: { name: "Season", cols: { id: 1, name: 2, startDate: 3, endDate: 4 } },
-        rulesets: { name: "Rulesets", cols: { id: 1, leagueId: 2, rulesJson: 3 } },
-        schedule: { name: "Schedule", cols: { id: 1, leagueId: 2, date: 3, time: 4, home: 5, away: 6, venue: 7 } },
-        standings: { name: "Standings", cols: { leagueId: 1, teamId: 2, played: 3, wins: 4, loss: 5, ties: 6, pts: 7 } },
-        teamStats: { name: "Team_Stats", cols: { teamId: 1, games: 2, goalsFor: 3, goalsAgainst: 4 } },
-        gameResults: { name: "Game_Results", cols: { gameId: 1, homeScore: 2, awayScore: 3, winnerId: 4 } }
-      }
-    },
-    LIVE: {
-      tabs: {
-        events: { name: "Game_Events", cols: { id: 1, gameId: 2, time: 3, type: 4, teamId: 5, playerId: 6 } },
-        gameJson: { name: "Game_Results_Json", cols: { gameId: 1, fullJson: 2 } },
-        summary: { name: "Live_Summary", cols: { gameId: 1, homeScore: 2, awayScore: 3, period: 4, status: 5 } }
-      }
-    }
-  };
 
   // 3. Vul de sheets met tabbladen, headers en testdata
   Object.keys(MAP).forEach(category => {
