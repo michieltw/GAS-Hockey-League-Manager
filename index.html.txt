@@ -149,7 +149,6 @@
     <main class="flex-1 min-w-0 overflow-y-auto p-4 md:p-8 custom-scrollbar relative bg-background overflow-x-hidden" id="app-container">
         <!-- EERST DE CORE LOGICA LADEN -->
         <?!= include('Plugin_Core'); ?>
-        <?!= include('Plugin_Core_Logic'); ?>
         <?!= include('Plugin_Dashboard'); ?>
         <?!= include('Plugin_Teams'); ?>
         <?!= include('Plugin_Standings'); ?>
