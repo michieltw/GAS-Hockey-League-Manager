@@ -1,6 +1,40 @@
 <!-- De container waar de router naar zoekt -->
 <div id="page_scorekeeper" class="plugin-page h-full"></div>
 
+<style>
+
+        #sk-wrapper { font-family: 'Hanken Grotesk', sans-serif; }
+        .rink-svg line, .rink-svg circle, .rink-svg path {
+            stroke-width: 2px;
+            vector-effect: non-scaling-stroke;
+        }
+        .rink-marker {
+            animation: fadeOut 1s forwards;
+            pointer-events: none;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+
+
+    #sk-wrapper {
+      min-height: max(884px, 100dvh);
+    }
+
+    /* Control Bar Active States */
+    .control-btn.active {
+        background-color: #111827; /* on-surface */
+        color: #f4f5f7; /* background */
+        border-color: #111827;
+    }
+    .control-btn:not(.active) {
+        background-color: #e5e7eb; /* surface-container-highest */
+        color: #4b5563; /* on-surface-variant */
+        border-color: #e5e7eb;
+    }
+
+</style>
 <script>
     function renderScorekeeper(container) {
         // Alleen Scorekeepers, Officers en Managers mogen hier in
@@ -56,6 +90,665 @@
 
     function startScorekeeperConsole(gameId) {
         // Hier bouwen we straks in stap 3 de daadwerkelijke wedstrijd-interface!
-        alert("We openen straks de console voor wedstrijd: " + gameId);
+
+        const container = document.getElementById('page_scorekeeper');
+
+        // Render the UI
+        container.innerHTML = `<div id="sk-wrapper" class="bg-sk-background text-sk-on-background w-full h-full flex flex-col overflow-hidden relative">
+<!-- Whistle Modal -->
+<div class="hidden absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4" id="whistle-modal">
+<div class="bg-sk-surface w-full max-w-sm rounded-xl shadow-xl flex flex-col overflow-hidden">
+<div class="bg-sk-primary-container p-4 border-b border-sk-outline-variant flex justify-between items-center">
+<h2 class="text-headline-lg font-headline-lg font-bold text-sk-on-primary-container">Play Stopped</h2>
+<button class="text-sk-on-primary-container p-1 hover:bg-sk-surface-container-highest rounded-full transition-colors" id="close-modal">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<!-- Clock Adjustment -->
+<div class="flex items-center justify-between bg-sk-surface-container-low p-3 rounded-lg border border-sk-outline-variant">
+<span class="text-body-lg font-body-lg text-sk-on-surface">Adjust Clock</span>
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 rounded-full bg-sk-surface-container-highest flex items-center justify-center hover:bg-sk-surface-variant transition-colors border border-sk-outline-variant" id="btn-minus-1s">-1s</button>
+<span class="font-headline-lg font-bold w-16 text-center" id="modal-clock-display">01:58</span>
+<button class="w-8 h-8 rounded-full bg-sk-surface-container-highest flex items-center justify-center hover:bg-sk-surface-variant transition-colors border border-sk-outline-variant" id="btn-plus-1s">+1s</button>
+</div>
+</div>
+<!-- Action Options -->
+<div class="flex flex-col gap-2">
+<!-- Face-off Option -->
+<div class="border border-sk-outline-variant rounded-lg overflow-hidden">
+<button class="modal-action-btn w-full p-3 text-left font-headline-md bg-sk-surface hover:bg-sk-surface-container-low transition-colors flex justify-between items-center" data-target="faceoff-options">
+                        Face-off
+                        <span class="material-symbols-outlined transition-transform">expand_more</span>
+</button>
+<div class="hidden bg-sk-surface-container-low p-3 border-t border-sk-outline-variant" id="faceoff-options">
+<div class="flex gap-2">
+<button class="faceoff-log-btn flex-1 py-2 bg-sk-team-lii text-white rounded font-button-text shadow-sm" data-team="LII">Win LII</button>
+<button class="faceoff-log-btn flex-1 py-2 bg-sk-team-tor text-white rounded font-button-text shadow-sm" data-team="TOR">Win TOR</button>
+</div>
+</div>
+</div>
+<!-- Penalty Option -->
+<div class="border border-sk-outline-variant rounded-lg overflow-hidden">
+<button class="modal-action-btn w-full p-3 text-left font-headline-md bg-sk-surface hover:bg-sk-surface-container-low transition-colors flex justify-between items-center" data-target="penalty-options">
+                        Penalty
+                        <span class="material-symbols-outlined transition-transform">expand_more</span>
+</button>
+<div class="hidden bg-sk-surface-container-low p-3 border-t border-sk-outline-variant flex flex-col gap-3" id="penalty-options">
+<div class="flex gap-2">
+<button class="penalty-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors bg-sk-surface-variant border-sk-primary font-bold" data-team="LII">Team LII</button>
+<button class="penalty-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors" data-team="TOR">Team TOR</button>
+</div>
+<select class="penalty-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
+<option value="">Select Player...</option>
+<option>Player A</option>
+<option>Player B</option>
+</select>
+<select class="penalty-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
+<option value="">Select Penalty Type...</option>
+<option>Tripping</option>
+<option>Slashing</option>
+<option>Hooking</option>
+</select>
+<button class="w-full bg-sk-surface-container-highest text-sk-on-surface py-2 rounded font-button-text shadow-sm hover:bg-sk-surface-variant transition-colors" id="log-penalty-btn">Log Penalty</button>
+</div>
+</div>
+<!-- Goal Option -->
+<div class="border border-sk-outline-variant rounded-lg overflow-hidden">
+<button class="modal-action-btn w-full p-3 text-left font-headline-md bg-sk-surface hover:bg-sk-surface-container-low transition-colors flex justify-between items-center" data-target="goal-options">
+                        Goal
+                        <span class="material-symbols-outlined transition-transform">expand_more</span>
+</button>
+<div class="hidden bg-sk-surface-container-low p-3 border-t border-sk-outline-variant flex flex-col gap-3" id="goal-options">
+<div class="flex gap-2">
+<button class="goal-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors bg-sk-surface-variant border-sk-primary font-bold" data-team="LII">Team LII</button>
+<button class="goal-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors" data-team="TOR">Team TOR</button>
+</div>
+<select class="goal-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
+<option value="">Scorer...</option>
+<option>Player X</option>
+<option>Player Y</option>
+</select>
+<select class="goal-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
+<option value="">Primary Assist...</option>
+<option>Player Z</option>
+<option>None</option>
+</select>
+<select class="goal-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
+<option value="">Secondary Assist...</option>
+<option>Player W</option>
+<option>None</option>
+</select>
+<button class="w-full bg-sk-surface-container-highest text-sk-on-surface py-2 rounded font-button-text shadow-sm hover:bg-sk-surface-variant transition-colors" id="log-goal-btn">Log Goal</button>
+</div>
+</div>
+</div>
+<button class="mt-2 w-full bg-sk-primary text-sk-on-primary py-3 rounded-lg font-button-text font-bold shadow-md active:scale-95 transition-transform" id="resume-play">
+                Resume Play
+            </button>
+</div>
+</div>
+</div>
+<!-- Global Header & Scoreboard -->
+<header class="flex-shrink-0 border-b border-sk-outline-variant">
+<!-- TopAppBar -->
+<div class="bg-sk-primary-container text-sk-on-primary-container flex flex-col w-full px-container-padding py-3">
+<div class="flex items-center gap-4">
+<button class="text-sk-on-primary-container hover:bg-sk-surface-container-highest transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 bg-sk-team-tor text-white font-headline-md rounded flex items-center justify-center font-bold">T</div>
+<h1 class="text-headline-lg-mobile font-headline-lg font-bold">LII vs TOR</h1>
+</div>
+<span class="text-body-sm text-sk-on-primary-container opacity-80">October 15, 2024</span>
+</div>
+<button class="ml-auto text-sk-on-primary-container hover:bg-sk-surface-container-highest transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+</div>
+</div>
+<!-- Score Board Area -->
+<div class="flex w-full h-24 bg-sk-surface-container-high border-y border-sk-outline-variant relative">
+<!-- LII (Home) -->
+<div class="flex-1 bg-sk-team-lii flex flex-col items-center justify-center relative">
+<span class="text-score-display font-score-display text-white absolute left-4">L</span>
+<span class="text-score-display font-score-display text-white" id="score-lii">2</span>
+</div>
+<!-- Center Info -->
+<div class="w-32 bg-sk-surface flex flex-col items-center justify-center z-10 px-2 py-1 shadow-sm border-x border-sk-outline-variant">
+<span class="text-headline-md font-headline-md text-sk-on-surface">1st</span>
+<span class="text-headline-lg font-headline-lg text-sk-on-surface font-bold" id="match-clock">01:58</span>
+<div class="flex justify-between w-full mt-1 text-label-caps font-label-caps text-sk-on-surface-variant px-2">
+<span id="shots-lii">15 shots</span>
+<span id="shots-tor">12 shots</span>
+</div>
+</div>
+<!-- TOR (Away) -->
+<div class="flex-1 bg-sk-team-tor flex flex-col items-center justify-center relative">
+<span class="text-score-display font-score-display text-white" id="score-tor">4</span>
+<div class="absolute right-4 w-10 h-10 border-2 border-white rounded bg-transparent flex items-center justify-center">
+<span class="text-headline-lg font-headline-lg text-white font-bold">T</span>
+</div>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex w-full bg-sk-surface px-2 h-12" id="header-tabs">
+<button class="tab-btn flex-1 flex flex-col items-center justify-center text-sk-on-surface-variant hover:bg-sk-surface-container-highest transition-colors text-label-caps font-label-caps" data-target="view-summary">Summary</button>
+<button class="tab-btn active-tab flex-1 flex flex-col items-center justify-center text-sk-primary border-b-2 border-sk-primary hover:bg-sk-surface-container-highest transition-colors text-label-caps font-label-caps" data-target="view-play-by-play">Play by play</button>
+<button class="tab-btn flex-1 flex flex-col items-center justify-center text-sk-on-surface-variant hover:bg-sk-surface-container-highest transition-colors text-label-caps font-label-caps" data-target="view-stats">Stats</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-sk-background flex flex-col p-4 gap-6 relative">
+<!-- Control Bar -->
+<div class="flex justify-between gap-2 px-2" id="control-bar">
+<button class="control-btn flex-1 py-2 rounded-lg font-button-text text-button-text transition-colors border" data-target="view-pre-game" id="nav-pre-game">Pre game</button>
+<button class="control-btn active flex-1 py-2 rounded-lg font-button-text text-button-text transition-colors border" data-target="view-match" id="nav-match">Match</button>
+<button class="control-btn flex-1 py-2 rounded-lg font-button-text text-button-text transition-colors border" data-target="view-post-game" id="nav-post-game">Post Game</button>
+</div>
+<!-- Main Flow Containers -->
+<!-- PRE GAME VIEW -->
+<div class="hidden flex flex-col gap-6" id="view-pre-game">
+<div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 shadow-sm flex flex-col gap-4">
+<h3 class="text-headline-md font-headline-md text-sk-on-surface">Game Settings</h3>
+<div class="flex flex-col gap-2">
+<label class="text-body-sm font-bold text-sk-on-surface-variant">Ruleset</label>
+<select class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 px-3 w-full">
+<option>Standard IIHF</option>
+<option>NHL</option>
+<option>Custom</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-body-sm font-bold text-sk-on-surface-variant">Start Time</label>
+<input class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 px-3 w-full" type="datetime-local"/>
+</div>
+</div>
+<div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 shadow-sm flex flex-col gap-4">
+<h3 class="text-headline-md font-headline-md text-sk-on-surface">Rosters</h3>
+<div class="flex gap-4">
+<button class="flex-1 py-2 border border-sk-outline-variant rounded-lg bg-sk-team-lii text-white font-bold">Edit LII Roster</button>
+<button class="flex-1 py-2 border border-sk-outline-variant rounded-lg bg-sk-team-tor text-white font-bold">Edit TOR Roster</button>
+</div>
+</div>
+</div>
+<!-- POST GAME VIEW -->
+<div class="hidden flex flex-col gap-6" id="view-post-game">
+<div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 shadow-sm flex flex-col gap-4">
+<h3 class="text-headline-md font-headline-md text-sk-on-surface">Game Sign-off</h3>
+<div class="flex flex-col gap-2">
+<label class="text-body-sm font-bold text-sk-on-surface-variant">Official Scorer</label>
+<input class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 px-3 w-full" placeholder="Enter scorer name" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-body-sm font-bold text-sk-on-surface-variant">Referee 1</label>
+<input class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 px-3 w-full" placeholder="Enter referee name" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-body-sm font-bold text-sk-on-surface-variant">Referee 2</label>
+<input class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 px-3 w-full" placeholder="Enter referee name" type="text"/>
+</div>
+<button class="w-full bg-sk-primary text-sk-on-primary py-3 rounded-lg font-button-text font-bold shadow-md mt-4">Finalize Game</button>
+</div>
+</div>
+<!-- MATCH VIEW (Existing) -->
+<div class="flex flex-col gap-6 w-full" id="view-match">
+<!-- Views Container (For Summary/PlaybyPlay/Stats) -->
+<div class="flex flex-col gap-6 w-full" id="views-container">
+<!-- View: Play by Play (Default) -->
+<div class="flex flex-col gap-6 w-full" id="view-play-by-play">
+<!-- Live Zone (Rink) -->
+<div class="w-full flex justify-center relative" id="rink-container">
+<!-- Rink SVG -->
+<div class="w-full max-w-[400px] aspect-[1.5/1] bg-white rounded-[40px] relative overflow-hidden border border-sk-outline-variant cursor-crosshair shadow-sm" id="interactive-rink">
+<svg class="w-full h-full rink-svg" preserveaspectratio="xMidYMid meet" viewbox="0 0 600 400">
+<!-- Red Line -->
+<line stroke="#cc0000" x1="300" x2="300" y1="0" y2="400"></line>
+<!-- Center Circle -->
+<circle cx="300" cy="200" fill="none" r="60" stroke="#0033a0"></circle>
+<circle cx="300" cy="200" fill="#0033a0" r="5"></circle>
+<!-- Blue Lines -->
+<line stroke="#0033a0" stroke-width="4" x1="200" x2="200" y1="0" y2="400"></line>
+<line stroke="#0033a0" stroke-width="4" x1="400" x2="400" y1="0" y2="400"></line>
+<!-- Goal Lines -->
+<line stroke="#cc0000" x1="30" x2="30" y1="0" y2="400"></line>
+<line stroke="#cc0000" x1="570" x2="570" y1="0" y2="400"></line>
+<!-- Creases -->
+<path d="M 30 160 A 40 40 0 0 1 30 240 Z" fill="#a6c8ff" opacity="0.5" stroke="#cc0000"></path>
+<path d="M 570 160 A 40 40 0 0 0 570 240 Z" fill="#ffb693" opacity="0.5" stroke="#cc0000"></path>
+<!-- Left Faceoff Circles -->
+<circle cx="100" cy="100" fill="none" r="45" stroke="#cc0000"></circle>
+<circle cx="100" cy="100" fill="#cc0000" r="3"></circle>
+<path d="M 85 100 h 10 m 10 0 h 10 m -15 -15 v 10 m 0 10 v 10" stroke="#cc0000"></path>
+<circle cx="100" cy="300" fill="none" r="45" stroke="#cc0000"></circle>
+<circle cx="100" cy="300" fill="#cc0000" r="3"></circle>
+<path d="M 85 300 h 10 m 10 0 h 10 m -15 -15 v 10 m 0 10 v 10" stroke="#cc0000"></path>
+<!-- Right Faceoff Circles -->
+<circle cx="500" cy="100" fill="none" r="45" stroke="#cc0000"></circle>
+<circle cx="500" cy="100" fill="#cc0000" r="3"></circle>
+<path d="M 485 100 h 10 m 10 0 h 10 m -15 -15 v 10 m 0 10 v 10" stroke="#cc0000"></path>
+<circle cx="500" cy="300" fill="none" r="45" stroke="#cc0000"></circle>
+<circle cx="500" cy="300" fill="#cc0000" r="3"></circle>
+<path d="M 485 300 h 10 m 10 0 h 10 m -15 -15 v 10 m 0 10 v 10" stroke="#cc0000"></path>
+<!-- Neutral Zone Dots -->
+<circle cx="240" cy="100" fill="#cc0000" r="3"></circle>
+<circle cx="240" cy="300" fill="#cc0000" r="3"></circle>
+<circle cx="360" cy="100" fill="#cc0000" r="3"></circle>
+<circle cx="360" cy="300" fill="#cc0000" r="3"></circle>
+<!-- Click Tracking Areas -->
+<rect fill="transparent" height="400" id="rink-lii" width="300" x="0" y="0"></rect>
+<rect fill="transparent" height="400" id="rink-tor" width="300" x="300" y="0"></rect>
+</svg>
+</div>
+</div>
+<!-- Action Zone -->
+<div class="flex gap-4 items-end">
+<button class="bg-sk-primary text-sk-on-primary rounded-xl px-6 py-4 font-button-text text-[20px] font-black uppercase shadow-md active:scale-95 transition-transform flex-shrink-0" id="btn-whistle">
+                        Whistle
+                    </button>
+<div class="flex-1 flex gap-2">
+<div class="flex-1 flex flex-col gap-1">
+<label class="text-label-caps font-label-caps text-sk-on-surface-variant">Period</label>
+<select class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 pl-3 pr-8 w-full appearance-none focus:ring-2 focus:ring-sk-primary h-10 shadow-sm">
+<option>1st</option>
+<option>2nd</option>
+<option>3rd</option>
+</select>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<label class="text-label-caps font-label-caps text-sk-on-surface-variant">Event</label>
+<select class="bg-sk-surface border border-sk-outline-variant text-sk-on-surface rounded-lg py-2 pl-3 pr-8 w-full appearance-none focus:ring-2 focus:ring-sk-primary h-10 shadow-sm">
+<option>All</option>
+<option>Goals</option>
+<option>Penalties</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Data Zone (Play by play) -->
+<div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 flex flex-col gap-4 mb-20 shadow-sm" id="play-by-play-list">
+<h3 class="text-headline-md font-headline-md text-sk-on-surface">1st period</h3>
+<!-- Event Card -->
+<div class="flex items-center gap-4 bg-sk-surface-container-high p-3 rounded-lg border border-sk-outline-variant">
+<div class="w-12 h-12 rounded-full bg-sk-team-tor flex items-center justify-center shadow-sm">
+<span class="text-headline-lg font-headline-lg text-white font-bold">T</span>
+</div>
+<div class="flex-1 flex flex-col">
+<span class="text-body-lg font-body-lg font-bold text-sk-on-surface">V. Haley (2)</span>
+<span class="text-body-sm font-body-sm text-sk-on-surface-variant">Unassisted</span>
+<span class="text-label-caps font-label-caps text-sk-outline mt-1">09:42 LII 2 - TOR 4</span>
+</div>
+<div class="text-label-caps font-label-caps text-sk-team-tor font-bold">PP</div>
+</div>
+<!-- Dummy Event Card -->
+<div class="flex items-center gap-4 bg-sk-surface-container-high p-3 rounded-lg border border-sk-outline-variant opacity-70">
+<div class="w-12 h-12 rounded-full bg-sk-team-lii flex items-center justify-center shadow-sm">
+<span class="text-headline-lg font-headline-lg text-white font-bold">L</span>
+</div>
+<div class="flex-1 flex flex-col">
+<span class="text-body-lg font-body-lg font-bold text-sk-on-surface">J. Smith (1)</span>
+<span class="text-body-sm font-body-sm text-sk-on-surface-variant">Ast: K. Jones</span>
+<span class="text-label-caps font-label-caps text-sk-outline mt-1">05:12 LII 2 - TOR 3</span>
+</div>
+</div>
+</div>
+</div>
+<!-- View: Summary -->
+<div class="hidden flex flex-col gap-4" id="view-summary">
+<div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 shadow-sm text-center">
+<h3 class="text-headline-md text-sk-on-surface mb-2">Match Summary</h3>
+<p class="text-body-lg text-sk-on-surface-variant">No summary data available yet.</p>
+</div>
+</div>
+<!-- View: Stats -->
+<div class="hidden flex flex-col gap-4" id="view-stats">
+<div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 shadow-sm text-center">
+<h3 class="text-headline-md text-sk-on-surface mb-2">Team Stats</h3>
+<p class="text-body-lg text-sk-on-surface-variant">No stats data available yet.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>`;
+
+        // Initialize logic
+        initScorekeeperUI();
+
+    }
+
+    function initScorekeeperUI() {
+// --- State Management ---
+            const AppState = {
+                clockSeconds: 118,
+                isRunning: false,
+                clockInterval: null,
+                stats: {
+                    LII: { shots: 15, score: 2 },
+                    TOR: { shots: 12, score: 4 }
+                },
+                ui: {
+                    selectedPenaltyTeam: 'LII',
+                    selectedGoalTeam: 'LII'
+                }
+            };
+
+            // --- DOM Elements ---
+            const DOM = {
+                clock: {
+                    main: document.getElementById('match-clock'),
+                    modal: document.getElementById('modal-clock-display'),
+                    btnPlus: document.getElementById('btn-plus-1s'),
+                    btnMinus: document.getElementById('btn-minus-1s')
+                },
+                scoreboard: {
+                    liiScore: document.getElementById('score-lii'),
+                    torScore: document.getElementById('score-tor'),
+                    liiShots: document.getElementById('shots-lii'),
+                    torShots: document.getElementById('shots-tor')
+                },
+                rink: {
+                    container: document.getElementById('interactive-rink'),
+                    areaLii: document.getElementById('rink-lii'),
+                    areaTor: document.getElementById('rink-tor')
+                },
+                navigation: {
+                    controls: document.querySelectorAll('.control-btn'),
+                    tabs: document.querySelectorAll('.tab-btn'),
+                    viewsContainer: document.getElementById('views-container'),
+                    mainViews: [
+                        document.getElementById('view-pre-game'),
+                        document.getElementById('view-match'),
+                        document.getElementById('view-post-game')
+                    ],
+                    headerTabs: document.getElementById('header-tabs')
+                },
+                modal: {
+                    container: document.getElementById('whistle-modal'),
+                    btnWhistle: document.getElementById('btn-whistle'),
+                    btnClose: document.getElementById('close-modal'),
+                    btnResume: document.getElementById('resume-play'),
+                    actionBtns: document.querySelectorAll('.modal-action-btn')
+                },
+                feed: {
+                    list: document.getElementById('play-by-play-list')
+                }
+            };
+
+            // --- GAS Integration Hooks ---
+            const GASHooks = {
+                logEvent: (eventType, details) => {
+                    console.log(`[GAS Hook] Event: ${eventType}`, details);
+                    if (typeof google !== 'undefined' && google.script) {
+                        google.script.run
+                            .withSuccessHandler((res) => console.log('GAS Success:', res))
+                            .withFailureHandler((err) => console.error('GAS Error:', err))
+                            .processHockeyEvent({ type: eventType, data: details, timestamp: new Date() });
+                    }
+                }
+            };
+
+            // --- UI Updates & Logic ---
+            function updateClockDisplay() {
+                const mins = Math.floor(AppState.clockSeconds / 60);
+                const secs = AppState.clockSeconds % 60;
+                const displayStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                if (DOM.clock.main) DOM.clock.main.textContent = displayStr;
+                if (DOM.clock.modal) DOM.clock.modal.textContent = displayStr;
+            }
+
+            function startClock() {
+                if (!AppState.isRunning) {
+                    AppState.isRunning = true;
+                    GASHooks.logEvent('CLOCK_START', { timeRemaining: AppState.clockSeconds });
+                    AppState.clockInterval = setInterval(() => {
+                        if (AppState.clockSeconds > 0) {
+                            AppState.clockSeconds--;
+                            updateClockDisplay();
+                        } else {
+                            stopClock();
+                        }
+                    }, 1000);
+                }
+            }
+
+            function stopClock() {
+                AppState.isRunning = false;
+                if (AppState.clockInterval) clearInterval(AppState.clockInterval);
+                GASHooks.logEvent('CLOCK_STOP', { timeRemaining: AppState.clockSeconds });
+            }
+
+            // --- Event Listeners ---
+
+            // Rink Interaction
+            DOM.rink.container.addEventListener('click', (e) => {
+                const rect = DOM.rink.container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const pctX = (x / rect.width) * 100;
+                const team = pctX < 50 ? 'LII' : 'TOR';
+                const color = team === 'LII' ? '#e67e22' : '#004b8d';
+
+                AppState.stats[team].shots++;
+                if (team === 'LII') DOM.scoreboard.liiShots.textContent = `${AppState.stats.LII.shots} shots`;
+                else DOM.scoreboard.torShots.textContent = `${AppState.stats.TOR.shots} shots`;
+
+                GASHooks.logEvent('SHOT_RECORDED', { team, x, y });
+
+                const marker = document.createElement('div');
+                marker.className = 'absolute rounded-full rink-marker z-50';
+                marker.style.width = '12px';
+                marker.style.height = '12px';
+                marker.style.backgroundColor = color;
+                marker.style.left = `${x - 6}px`;
+                marker.style.top = `${y - 6}px`;
+                marker.style.boxShadow = `0 0 10px ${color}`;
+
+                DOM.rink.container.appendChild(marker);
+                setTimeout(() => {
+                    if (DOM.rink.container.contains(marker)) DOM.rink.container.removeChild(marker);
+                }, 1000);
+            });
+
+            // Navigation Flow
+            DOM.navigation.controls.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    DOM.navigation.controls.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    DOM.navigation.mainViews.forEach(v => { if(v) v.classList.add('hidden'); });
+
+                    const targetId = btn.getAttribute('data-target');
+                    const targetView = document.getElementById(targetId);
+                    if(targetView) targetView.classList.remove('hidden');
+
+                    if (targetId === 'view-match') {
+                        DOM.navigation.headerTabs.classList.remove('hidden');
+                        DOM.navigation.headerTabs.classList.add('flex');
+                    } else {
+                        DOM.navigation.headerTabs.classList.add('hidden');
+                        DOM.navigation.headerTabs.classList.remove('flex');
+                    }
+
+                    if (btn.textContent.trim() === 'Match') {
+                        startClock();
+                    } else {
+                        stopClock();
+                    }
+                });
+            });
+
+            DOM.navigation.tabs.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    DOM.navigation.tabs.forEach(b => {
+                        b.classList.remove('text-primary', 'border-b-2', 'border-primary', 'active-tab');
+                        b.classList.add('text-on-surface-variant');
+                    });
+
+                    btn.classList.add('text-primary', 'border-b-2', 'border-primary', 'active-tab');
+                    btn.classList.remove('text-on-surface-variant');
+
+                    const targetId = btn.getAttribute('data-target');
+                    DOM.navigation.viewsContainer.querySelectorAll(':scope > div').forEach(view => {
+                        view.classList.add('hidden');
+                    });
+                    document.getElementById(targetId).classList.remove('hidden');
+                });
+            });
+
+            // Modal Controls
+            function openModal() {
+                stopClock();
+                updateClockDisplay();
+                DOM.modal.container.classList.remove('hidden');
+            }
+
+            function closeModal() {
+                DOM.modal.container.classList.add('hidden');
+            }
+
+            DOM.modal.btnWhistle.addEventListener('click', openModal);
+            DOM.modal.btnClose.addEventListener('click', closeModal);
+
+            DOM.modal.btnResume.addEventListener('click', () => {
+                closeModal();
+                if(document.querySelector('.control-btn.active').textContent.trim() === 'Match') {
+                    startClock();
+                }
+            });
+
+            DOM.clock.btnPlus.addEventListener('click', () => {
+                AppState.clockSeconds++;
+                updateClockDisplay();
+                GASHooks.logEvent('CLOCK_ADJUSTED', { adjustment: '+1s', newTime: AppState.clockSeconds });
+            });
+            DOM.clock.btnMinus.addEventListener('click', () => {
+                if (AppState.clockSeconds > 0) {
+                    AppState.clockSeconds--;
+                    updateClockDisplay();
+                    GASHooks.logEvent('CLOCK_ADJUSTED', { adjustment: '-1s', newTime: AppState.clockSeconds });
+                }
+            });
+
+            DOM.modal.actionBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-target');
+                    const targetDiv = document.getElementById(targetId);
+                    const icon = btn.querySelector('span');
+
+                    if (targetDiv.classList.contains('hidden')) {
+                        document.querySelectorAll('[id$="-options"]').forEach(div => div.classList.add('hidden'));
+                        document.querySelectorAll('.modal-action-btn span').forEach(sp => sp.textContent = 'expand_more');
+                        targetDiv.classList.remove('hidden');
+                        icon.textContent = 'expand_less';
+                    } else {
+                        targetDiv.classList.add('hidden');
+                        icon.textContent = 'expand_more';
+                    }
+                });
+            });
+
+            // Feed Updates
+            function addEventToFeed(team, title, subtitle, badgeText = '') {
+                const timeStr = DOM.clock.main.textContent;
+                const isLii = team === 'LII';
+                const teamInitial = isLii ? 'L' : 'T';
+                const bgClass = isLii ? 'bg-team-lii' : 'bg-team-tor';
+                const textClass = isLii ? 'text-team-lii' : 'text-team-tor';
+
+                const scoreStr = `LII ${AppState.stats.LII.score} - TOR ${AppState.stats.TOR.score}`;
+
+                const eventCard = document.createElement('div');
+                eventCard.className = 'flex items-center gap-4 bg-surface-container-high p-3 rounded-lg border border-outline-variant';
+
+                let badgeHtml = '';
+                if (badgeText) {
+                    badgeHtml = `<div class="text-label-caps font-label-caps ${textClass} font-bold">${badgeText}</div>`;
+                }
+
+                eventCard.innerHTML = `
+                    <div class="w-12 h-12 rounded-full ${bgClass} flex items-center justify-center shadow-sm">
+                        <span class="text-headline-lg font-headline-lg text-white font-bold">${teamInitial}</span>
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <span class="text-body-lg font-body-lg font-bold text-on-surface">${title}</span>
+                        <span class="text-body-sm font-body-sm text-on-surface-variant">${subtitle}</span>
+                        <span class="text-label-caps font-label-caps text-outline mt-1">${timeStr} ${scoreStr}</span>
+                    </div>
+                    ${badgeHtml}
+                `;
+
+                const header = DOM.feed.list.querySelector('h3');
+                if (header) header.insertAdjacentElement('afterend', eventCard);
+                else DOM.feed.list.appendChild(eventCard);
+            }
+
+            // Action Handlers
+            document.querySelectorAll('.faceoff-log-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const team = e.target.getAttribute('data-team');
+                    addEventToFeed(team, `Face-off Won`, `${team} secures the puck`);
+                    GASHooks.logEvent('FACEOFF_WON', { team });
+                    closeModal();
+                    if(document.querySelector('.control-btn.active').textContent.trim() === 'Match') startClock();
+                });
+            });
+
+            document.querySelectorAll('.penalty-team-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.penalty-team-btn').forEach(b => b.classList.remove('bg-surface-variant', 'border-primary', 'font-bold'));
+                    e.target.classList.add('bg-surface-variant', 'border-primary', 'font-bold');
+                    AppState.ui.selectedPenaltyTeam = e.target.getAttribute('data-team');
+                });
+            });
+
+            document.getElementById('log-penalty-btn')?.addEventListener('click', () => {
+                const selects = document.querySelectorAll('.penalty-log-select');
+                const player = selects[0].value || 'Unknown Player';
+                const type = selects[1].value || 'Unknown Penalty';
+                addEventToFeed(AppState.ui.selectedPenaltyTeam, `${player}`, `${type} (2 min)`, 'PEN');
+                GASHooks.logEvent('PENALTY_LOGGED', { team: AppState.ui.selectedPenaltyTeam, player, type });
+                closeModal();
+                if(document.querySelector('.control-btn.active').textContent.trim() === 'Match') startClock();
+            });
+
+            document.querySelectorAll('.goal-team-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.goal-team-btn').forEach(b => b.classList.remove('bg-surface-variant', 'border-primary', 'font-bold'));
+                    e.target.classList.add('bg-surface-variant', 'border-primary', 'font-bold');
+                    AppState.ui.selectedGoalTeam = e.target.getAttribute('data-team');
+                });
+            });
+
+            document.getElementById('log-goal-btn')?.addEventListener('click', () => {
+                const selects = document.querySelectorAll('.goal-log-select');
+                const scorer = selects[0].value || 'Unknown Scorer';
+                const ast1 = selects[1].value;
+                const ast2 = selects[2].value;
+
+                let assistText = 'Unassisted';
+                if (ast1 && ast1 !== 'None' && ast2 && ast2 !== 'None') assistText = `Ast: ${ast1}, ${ast2}`;
+                else if (ast1 && ast1 !== 'None') assistText = `Ast: ${ast1}`;
+                else if (ast2 && ast2 !== 'None') assistText = `Ast: ${ast2}`;
+
+                const team = AppState.ui.selectedGoalTeam;
+                AppState.stats[team].score++;
+
+                if (team === 'LII') DOM.scoreboard.liiScore.textContent = AppState.stats.LII.score;
+                else DOM.scoreboard.torScore.textContent = AppState.stats.TOR.score;
+
+                addEventToFeed(team, `${scorer}`, assistText, 'GOAL');
+                GASHooks.logEvent('GOAL_LOGGED', { team, scorer, assistText });
+
+                closeModal();
+                if(document.querySelector('.control-btn.active').textContent.trim() === 'Match') startClock();
+            });
+
+            // Initialization
+            updateClockDisplay();
     }
 </script>
