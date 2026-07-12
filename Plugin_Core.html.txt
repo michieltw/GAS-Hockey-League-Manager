@@ -1,6 +1,6 @@
 <script>
     // ==========================================
-    // 1. STATE & DATA HELPERS
+    // 1. STATE & DATA HELPERS (now mostly in Logic but we keep MockData and AppState here for core setup)
     // ==========================================
     let MockData = null;
 
@@ -12,45 +12,6 @@
         archiveStatus: 'idle',
         currentUser: null
     };
-
-    const getLeague = () => {
-        if (AppState.currentLeagueId === 'all') return { id: 'all', name: 'Alle Competities', logoUrl: '', bannerUrl: '' };
-        return MockData.leagues.find(l => l.id === AppState.currentLeagueId) || MockData.leagues[0];
-    };
-    const getTeam = (id) => MockData.teams.find(t => t.id === id);
-    const getPlayer = (id) => MockData.players.find(p => p.id === id);
-
-    const getLeagueTeams = () => {
-        if (AppState.currentLeagueId === 'all') return MockData.teams;
-        return MockData.teams.filter(t => t.leagueId === AppState.currentLeagueId);
-    };
-
-    const getLeaguePlayers = () => {
-        if (AppState.currentLeagueId === 'all') return MockData.players.filter(p => p.teamId !== null && p.teamId !== "");
-        const teamIds = getLeagueTeams().map(t => t.id);
-        return MockData.players.filter(p => teamIds.includes(p.teamId));
-    };
-
-    const getFreeAgents = () => MockData.players.filter(p => p.teamId === null || p.teamId === "");
-
-    function renderTeamLogo(team, classes = "w-10 h-10", textClasses = "text-sm") {
-        if (!team) return `<div class="${classes} rounded-xl bg-secondary flex items-center justify-center font-black shrink-0 overflow-hidden">?</div>`;
-        if (team.logoUrl && team.logoUrl.trim() !== "") return `<img src="${team.logoUrl}" class="${classes} object-contain shrink-0 drop-shadow-md" style="max-width: 100%; max-height: 100%; object-position: center;" alt="${team.name}">`;
-        return `<div class="${classes} rounded-xl flex items-center justify-center ${textClasses} font-black shadow-md border border-white/10 shrink-0 overflow-hidden" style="background-color: ${team.color || '#333'}; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${team.short || team.name.substring(0,3)}</div>`;
-    }
-
-    function formatCurrency(num) {
-        if(num === null || num === undefined) return '$0';
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
-    }
-
-    function unformatCurrency(str) {
-        return Number(str.replace(/[^0-9.-]+/g,""));
-    }
-
-    function refreshIcons() {
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
 
     // ==========================================
     // 2. CORE SYSTEM & NAVIGATION
@@ -132,7 +93,7 @@
         // 3. Haal de specifieke container op
         const viewContainer = document.getElementById(pageId);
         if(!viewContainer) return; // Container niet gevonden, stop hier
-        
+
         viewContainer.innerHTML = ''; // Leegmaken voor render
 
         // 4. Roep jouw bestaande globale render functies aan
@@ -167,9 +128,9 @@
             if(nameEl) nameEl.textContent = AppState.currentUser.name;
             if(roleEl) roleEl.textContent = AppState.currentUser.role;
             if(iconEl) { iconEl.classList.remove('text-muted'); iconEl.classList.add('text-papaya'); }
-            if(hqBtn && AppState.currentUser.role === 'Officer') { hqBtn.classList.remove('hidden'); hqBtn.classList.add('flex'); } 
+            if(hqBtn && AppState.currentUser.role === 'Officer') { hqBtn.classList.remove('hidden'); hqBtn.classList.add('flex'); }
             else if(hqBtn) { hqBtn.classList.add('hidden'); hqBtn.classList.remove('flex'); }
-            if(skBtn && (AppState.currentUser.role === 'Officer' || AppState.currentUser.role === 'Scorekeeper')) { skBtn.classList.remove('hidden'); skBtn.classList.add('flex'); } 
+            if(skBtn && (AppState.currentUser.role === 'Officer' || AppState.currentUser.role === 'Scorekeeper')) { skBtn.classList.remove('hidden'); skBtn.classList.add('flex'); }
             else if(skBtn) { skBtn.classList.add('hidden'); skBtn.classList.remove('flex'); }
         } else {
             if(nameEl) nameEl.textContent = 'Mijn Profiel';
@@ -194,15 +155,15 @@
         google.script.run
             .withSuccessHandler(function(response) {
                 btn.innerText = originalText; btn.disabled = false;
-                if (response.success) { 
-                    AppState.currentUser = response.user; 
-                    updateSidebarUser(); 
-                    navigate('profile'); 
+                if (response.success) {
+                    AppState.currentUser = response.user;
+                    updateSidebarUser();
+                    navigate('profile');
                 }
                 else showToast(response.message, 'info');
             })
             .withFailureHandler(function(error) {
-                btn.innerText = originalText; btn.disabled = false; 
+                btn.innerText = originalText; btn.disabled = false;
                 showToast('Fout bij serververbinding.', 'error');
             })
             .handlePluginAction('Core', 'authenticate', { username: user, pincode: pass });
@@ -216,7 +177,7 @@
 
     // (Plek voor de rest van je CRUD functies zoals uiSaveSalary, uiAddTask, etc. die je letterlijk kunt copy-pasten uit je script hier)
     // Omdat het bericht anders te lang wordt om correct te kopiëren, plak je hier al jouw overige functies uit "3. ACTION & CRUD" en "4. SCOREKEEPER LOGIC"
-    
+
     // Voer initApp uit als de DOM geladen is
     document.addEventListener('DOMContentLoaded', () => {
         // Init wordt in de Splash afgetrapt, of hier als backup
