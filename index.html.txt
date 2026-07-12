@@ -4,11 +4,9 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800;900&family=Oswald:wght=400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 
-  <!-- Frameworks (Jouw DaisyUI + De nieuwe Tailwind styling) -->
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -29,20 +27,28 @@
     }
   </script>
   
-  <!-- Jouw CSS file -->
   <?!= include('Style'); ?>
 </head>
 <body class="selection:bg-papaya/30 h-screen overflow-hidden text-foreground bg-background font-sans">
   
   <div id="toast-container"></div>
 
-  <!-- Splash Screen Plugin (Ligt bovenop alles) -->
+  <div id="page_IntroVideo" class="fixed inset-0 z-[1000] bg-black flex items-center justify-center transition-opacity duration-700">
+  <iframe id="intro-video-frame" 
+        src="https://drive.google.com/file/d/1HeSoHU8HiIG8INy0Uc2IqpFnkDM3-FJY/preview?autoplay=1&mute=1" 
+        class="w-full h-full border-0 pointer-events-none" 
+        allow="autoplay">
+</iframe>
+
+  <button onclick="endIntro()" class="absolute bottom-8 right-8 bg-white/10 hover:bg-white/20 text-white text-xs uppercase tracking-widest font-black px-5 py-2.5 rounded-full backdrop-blur-md border border-white/10 transition-all duration-300 active:scale-95 z-[1001]">
+    Skip Intro
+  </button>
+</div>
+
   <?!= include('Plugin_Splash'); ?>
 
-  <!-- MAIN APP WRAPPER (Verborgen tot Splash klaar is) -->
   <div id="app-wrapper" class="hidden h-full w-full flex-col md:flex-row fade-in">
       
-    <!-- MOBILE TOP BAR -->
     <div class="md:hidden w-full bg-card border-b border-border flex items-center justify-between p-4 shrink-0 z-30 relative shadow-md">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-papaya/20 bg-white/10">
@@ -55,81 +61,74 @@
         </button>
     </div>
 
-    <!-- OVERLAY FOR MOBILE SIDEBAR -->
     <div id="mobile-overlay" class="fixed inset-0 bg-black/80 z-40 hidden transition-opacity duration-300 opacity-0 md:hidden" onclick="App.toggleMobileMenu(true)"></div>
 
-    <!-- SIDEBAR / NAVIGATION -->
-<aside id="sidebar" class="fixed md:relative inset-y-0 left-0 w-64 bg-card border-r border-border flex flex-col shrink-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-        <div class="flex items-center gap-3">
-            <img id="sidebar-app-logo" src="https://via.placeholder.com/150/FFD700/000000?text=B" class="w-14 h-14 object-contain shrink-0 drop-shadow-lg rounded-xl" alt="App Logo" />
-            <div>
-                <h1 class="font-bold text-lg leading-tight tracking-tight">BLACKOUT</h1>
-                <p class="text-[10px] text-muted tracking-[0.2em] font-semibold uppercase">League Manager</p>
+    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 w-64 bg-card border-r border-border flex flex-col shrink-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+            <div class="flex items-center gap-3">
+                <img id="sidebar-app-logo" src="https://via.placeholder.com/150/FFD700/000000?text=B" class="w-14 h-14 object-contain shrink-0 drop-shadow-lg rounded-xl" alt="App Logo" />
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-tight">BLACKOUT</h1>
+                    <p class="text-[10px] text-muted tracking-[0.2em] font-semibold uppercase">League Manager</p>
+                </div>
             </div>
+            <button onclick="App.toggleMobileMenu(true)" class="md:hidden text-muted hover:text-white p-2 bg-secondary rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
         </div>
-        <button onclick="App.toggleMobileMenu(true)" class="md:hidden text-muted hover:text-white p-2 bg-secondary rounded-lg">
-            <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-    </div>
 
-    <nav class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar flex flex-col mt-4">
-        <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-2 px-2">Menu</p>
-        
-        <!-- Hoofdmenu -->
-        <button onclick="navigate('dashboard')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="dashboard">
-            <i data-lucide="layout-dashboard" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Dashboard
-        </button>
-        
-        <button onclick="navigate('schedule')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="schedule">
-            <i data-lucide="calendar" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Schema & RSVP
-        </button>
+        <nav class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar flex flex-col mt-4">
+            <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-2 px-2">Menu</p>
+            
+            <button onclick="navigate('dashboard')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Dashboard
+            </button>
+            
+            <button onclick="navigate('schedule')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="schedule">
+                <i data-lucide="calendar" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Schema & RSVP
+            </button>
 
-        <button onclick="navigate('scorekeeper')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="scorekeeper">
-            <i data-lucide="monitor" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Scorekeeper Console
-        </button>
+            <button onclick="navigate('scorekeeper')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="scorekeeper">
+                <i data-lucide="monitor" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Scorekeeper Console
+            </button>
 
-        <!-- Competitie -->
-        <div class="pt-4 pb-2"><p class="text-[10px] font-bold text-muted uppercase tracking-widest px-2">Competitie</p></div>
+            <div class="pt-4 pb-2"><p class="text-[10px] font-bold text-muted uppercase tracking-widest px-2">Competitie</p></div>
 
-        <button onclick="navigate('standings')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="standings">
-            <i data-lucide="trophy" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Standen
-        </button>
+            <button onclick="navigate('standings')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="standings">
+                <i data-lucide="trophy" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Standen
+            </button>
 
-        <button onclick="navigate('teams')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="teams">
-            <i data-lucide="shield" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Teams
-        </button>
+            <button onclick="navigate('teams')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="teams">
+                <i data-lucide="shield" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Teams
+            </button>
 
-        <button onclick="navigate('players')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="players">
-            <i data-lucide="users" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Spelers
-        </button>
+            <button onclick="navigate('players')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="players">
+                <i data-lucide="users" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Spelers
+            </button>
 
-        <button onclick="navigate('stats')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="stats">
-            <i data-lucide="bar-chart-2" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Statistieken
-        </button>
+            <button onclick="navigate('stats')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="stats">
+                <i data-lucide="bar-chart-2" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Statistieken
+            </button>
 
-        <!-- Extra -->
-        <div class="pt-4 pb-2"><p class="text-[10px] font-bold text-muted uppercase tracking-widest px-2">Extra</p></div>
+            <div class="pt-4 pb-2"><p class="text-[10px] font-bold text-muted uppercase tracking-widest px-2">Extra</p></div>
 
-        <button onclick="navigate('awards_page')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="awards_page">
-            <i data-lucide="award" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Awards
-        </button>
+            <button onclick="navigate('awards_page')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="awards_page">
+                <i data-lucide="award" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Awards
+            </button>
 
-        <button onclick="navigate('archive_page')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="archive_page">
-            <i data-lucide="archive" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Archief
-        </button>
+            <button onclick="navigate('archive_page')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="archive_page">
+                <i data-lucide="archive" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Archief
+            </button>
 
-        <button onclick="navigate('special')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="special">
-            <i data-lucide="star" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Special
-        </button>
+            <button onclick="navigate('special')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="special">
+                <i data-lucide="star" class="w-5 h-5 group-hover:text-papaya transition-colors"></i> Special
+            </button>
 
-        <button onclick="navigate('blackout_page')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="blackout_page">
-            <i data-lucide="power" class="w-5 h-5 group-hover:text-red-500 transition-colors"></i> Blackout
-        </button>
+            <button onclick="navigate('blackout_page')" class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-muted hover:text-white hover:bg-white/5 transition-colors font-bold text-sm group nav-btn" data-target="blackout_page">
+                <i data-lucide="power" class="w-5 h-5 group-hover:text-red-500 transition-colors"></i> Blackout
+            </button>
+        </nav>
 
-    </nav>
-
-<!-- USER PROFILE / LOGIN BUTTON -->
         <div class="p-4 border-t border-border shrink-0 mt-auto">
             <button onclick="navigate('profile')" class="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-secondary transition-colors text-left group">
                 <div class="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 group-hover:border-papaya/50 transition-colors">
@@ -141,13 +140,9 @@
                 </div>
             </button>
         </div>
-
     </aside>
- <!-- SIDEBAR / NAVIGATION END-->
 
-    <!-- MAIN CONTENT AREA (Hier laden jouw plugins in) -->
     <main class="flex-1 min-w-0 overflow-y-auto p-4 md:p-8 custom-scrollbar relative bg-background overflow-x-hidden" id="app-container">
-        <!-- EERST DE CORE LOGICA LADEN -->
         <?!= include('Plugin_Core'); ?>
         <?!= include('Plugin_Dashboard'); ?>
         <?!= include('Plugin_Teams'); ?>
@@ -165,30 +160,44 @@
         <?!= include('Plugin_PlayerDetail'); ?>
         <?!= include('Plugin_TeamDetail'); ?>
         <?!= include('Plugin_Preloader'); ?>
-
     </main>
   </div>
-<!-- MAIN CONTENT AREA END -->
 
   <script>
+    // ==========================================
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      const video = document.getElementById('intro-video');
+      if (video) {
+        video.addEventListener('ended', endIntro);
+      }
+    });
+
+    function endIntro() {
+      const introPage = document.getElementById('page_IntroVideo');
+      if (introPage) {
+        introPage.classList.add('opacity-0'); // Fade out animatie
+        setTimeout(() => {
+          introPage.remove(); // Verwijder uit DOM na 700ms fade
+        }, 700);
+      }
+    }
+
     const App = {
-      // Jouw bestaande switchPage functie, uitgebreid met de mobiele sluit-actie
       switchPage: function(pageId) {
         document.querySelectorAll('.plugin-page').forEach(el => el.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
-        this.toggleMobileMenu(true); // Sluit zijbalk op mobiel na klik
+        this.toggleMobileMenu(true);
       },
       
-      // Wordt aangeroepen als Splash klaar is
       showApp: function() {
         document.getElementById('page_Splash').classList.remove('active');
         const wrapper = document.getElementById('app-wrapper');
         wrapper.classList.remove('hidden');
         wrapper.classList.add('flex');
-        lucide.createIcons(); // Zet de <i data-lucide> tags om naar echte iconen
+        lucide.createIcons();
       },
       
-      // Nieuwe functie voor het mobiele menu
       toggleMobileMenu: function(forceClose = false) {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('mobile-overlay');
