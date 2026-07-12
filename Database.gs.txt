@@ -1,0 +1,34 @@
+const Database = {
+  getProps: () => PropertiesService.getScriptProperties(),
+  
+  // Hulpfunctie om de juiste sheet te pakken via jouw ID's
+  getSheet: function(sheetType) {
+    const id = this.getProps().getProperty(sheetType === 'CONFIG' ? 'SHEET1_ID' : sheetType === 'DATA' ? 'SHEET2_ID' : 'SHEET3_ID');
+    return SpreadsheetApp.openById(id);
+  },
+
+  // De flexibele getData functie
+  getData: function(sheetType, tabName) {
+    const sheet = this.getSheet(sheetType).getSheetByName(tabName);
+    
+    // VANGNET 1: Als het tabblad niet bestaat, return een lege array
+    if (!sheet) {
+      return []; 
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    
+    // VANGNET 2: Als er alleen headers zijn (of helemaal niks), return lege array
+    if (data.length < 2) {
+      return [];
+    }
+    
+    const headers = data.shift();
+    
+    return data.map(row => {
+      let obj = {};
+      headers.forEach((h, i) => obj[h] = row[i]);
+      return obj;
+    });
+  }
+};

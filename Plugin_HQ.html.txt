@@ -1,0 +1,172 @@
+<!-- De container waar de router naar zoekt -->
+<div id="page_hq" class="plugin-page h-full"></div>
+
+<script>
+    function renderLeagueHQ(container) {
+        if(!AppState.currentUser || AppState.currentUser.role !== 'Officer') return navigate('dashboard');
+        
+        const leagueId = AppState.currentLeagueId === 'all' ? 'l1' : AppState.currentLeagueId;
+        const totalPlayers = (MockData.players || []).length;
+        const totalUsers = (MockData.users || []).filter(u => u.username !== 'admin').length;
+        const pendingUsers = (MockData.users || []).filter(u => u.status === 'Pending').length;
+        const totalLeagues = (MockData.leagues || []).filter(l => l.id !== 'l_empty').length;
+        const totalTeams = (MockData.teams || []).length;
+
+        const teamsListHtml = (MockData.teams || []).map(t => {
+            const count = (MockData.players || []).filter(p => p.teamId === t.id).length;
+            return `<div class="flex justify-between items-center bg-secondary/50 p-2 rounded border border-white/5"><span class="text-xs font-bold text-white">${t.name}</span><span class="text-[10px] font-mono text-muted">${count} spelers</span></div>`;
+        }).join('');
+
+        const notes = (MockData.notes || []).filter(n => n.authorId === AppState.currentUser.id);
+        const notesHtml = notes.map(n => `<div class="bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl relative group"><p class="text-xs text-blue-100">${n.content}</p><p class="text-[8px] text-blue-400 mt-2">${n.date}</p><button onclick="uiDeleteNote('${n.id}')" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div>`).join('');
+
+        const anns = (MockData.announcements || []).sort((a,b)=>new Date(b.date)-new Date(a.date));
+        const annsHtml = anns.map(a => `<div class="bg-secondary/40 p-4 rounded-xl border border-white/5 flex justify-between items-start gap-4"><div><p class="text-sm font-bold text-white mb-1">${a.title}</p><p class="text-xs text-muted">${a.content}</p><p class="text-[8px] text-papaya mt-2">${a.date}</p></div><button onclick="uiDeleteAnnouncement('${a.id}')" class="text-red-400 hover:text-white p-2 rounded bg-red-500/10 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`).join('');
+
+        // Het tabblad voor leden administratie direct integreren in HQ
+        const usersHtml = (MockData.users || []).filter(u => u.username !== 'admin').map(u => `
+            <tr class="hover:bg-white/[0.04] transition-colors group">
+                <td class="p-4 border-b border-white/5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center border border-white/10 shrink-0"><i data-lucide="user" class="w-4 h-4 text-muted"></i></div>
+                        <div><p class="font-bold text-white text-xs">${u.name || u.username}</p><p class="text-[8px] uppercase tracking-widest text-muted mt-0.5">${u.username}</p></div>
+                    </div>
+                </td>
+                <td class="p-4 border-b border-white/5 text-xs text-muted">${u.reqTeamId ? ((MockData.teams || []).find(t => t.id === u.reqTeamId)?.name || u.reqTeamId) : '-'}</td>
+                <td class="p-4 border-b border-white/5">
+                    <select id="ustatus-${u.id}" class="bg-card border border-border rounded-lg px-2 py-1.5 text-xs font-bold outline-none focus:border-papaya ${u.status === 'Pending' ? 'text-orange-400' : 'text-green-400'}">
+                        <option value="Pending" ${u.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Approved" ${u.status === 'Approved' ? 'selected' : ''}>Approved</option>
+                    </select>
+                </td>
+                <td class="p-4 border-b border-white/5">
+                    <select id="urole-${u.id}" class="bg-card border border-border rounded-lg px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-papaya">
+                        <option value="Player" ${u.role === 'Player' ? 'selected' : ''}>Player</option>
+                        <option value="Manager" ${u.role === 'Manager' ? 'selected' : ''}>Manager</option>
+                        <option value="Officer" ${u.role === 'Officer' ? 'selected' : ''}>Officer</option>
+                        <option value="Scorekeeper" ${u.role === 'Scorekeeper' ? 'selected' : ''}>Scorekeeper</option>
+                    </select>
+                </td>
+                <td class="p-4 border-b border-white/5">
+                    <select id="ulink-${u.id}" class="w-full max-w-[150px] bg-card border border-border rounded-lg px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-papaya">
+                        <option value="">-- Geen Speler --</option>
+                        ${(MockData.players || []).map(p => `<option value="${p.id}" ${u.linkedId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="p-4 border-b border-white/5 text-right">
+                    <button onclick="uiSaveAdminUser('${u.id}')" class="bg-secondary text-white hover:bg-papaya hover:text-black px-3 py-1.5 rounded-lg border border-border text-[9px] uppercase tracking-widest font-black transition-all shadow-md">Update</button>
+                </td>
+            </tr>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="max-w-6xl mx-auto space-y-8 fade-in pb-10">
+                <div class="border-b border-border pb-6 flex items-center gap-4">
+                    <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20"><i data-lucide="briefcase" class="w-8 h-8"></i></div>
+                    <div>
+                        <h1 class="text-3xl font-oswald uppercase tracking-wide text-white">League HQ</h1>
+                        <p class="text-[10px] text-muted tracking-widest uppercase mt-1 font-bold">Control Panel & Administratie</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="bg-card border border-border p-4 rounded-2xl shadow text-center"><p class="text-[9px] uppercase tracking-widest text-muted font-bold mb-1">Spelers</p><p class="text-2xl font-black text-white">${totalPlayers}</p></div>
+                    <div class="bg-card border border-border p-4 rounded-2xl shadow text-center"><p class="text-[9px] uppercase tracking-widest text-muted font-bold mb-1">Users</p><p class="text-2xl font-black text-white">${totalUsers}</p></div>
+                    <div class="bg-card border border-orange-500/30 p-4 rounded-2xl shadow text-center"><p class="text-[9px] uppercase tracking-widest text-orange-400 font-bold mb-1">In Afwachting</p><p class="text-2xl font-black text-orange-400">${pendingUsers}</p></div>
+                    <div class="bg-card border border-border p-4 rounded-2xl shadow text-center"><p class="text-[9px] uppercase tracking-widest text-muted font-bold mb-1">Leagues</p><p class="text-2xl font-black text-white">${totalLeagues}</p></div>
+                    <div class="bg-card border border-border p-4 rounded-2xl shadow text-center"><p class="text-[9px] uppercase tracking-widest text-muted font-bold mb-1">Teams</p><p class="text-2xl font-black text-white">${totalTeams}</p></div>
+                </div>
+
+                <div class="bg-card border border-border p-6 md:p-8 rounded-3xl shadow-xl overflow-x-auto">
+                    <h2 class="font-oswald text-xl text-white uppercase tracking-wide border-b border-white/10 pb-3 mb-4 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-papaya"></i> Leden Administratie</h2>
+                    <table class="w-full text-left whitespace-nowrap min-w-[800px]">
+                        <thead class="bg-secondary/60 text-[9px] font-black uppercase tracking-widest text-muted">
+                            <tr><th class="p-3">User</th><th class="p-3">Team Aanvraag</th><th class="p-3">Status</th><th class="p-3">Rol</th><th class="p-3">Gekoppelde Speler ID</th><th class="p-3 text-right">Actie</th></tr>
+                        </thead>
+                        <tbody>${usersHtml || '<tr><td colspan="6" class="p-4 text-center text-muted text-xs">Geen gebruikers gevonden.</td></tr>'}</tbody>
+                    </table>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="bg-card border border-border p-6 rounded-3xl shadow-xl">
+                        <h2 class="font-oswald text-xl text-papaya uppercase tracking-wide border-b border-white/10 pb-3 mb-6 flex items-center gap-2"><i data-lucide="megaphone" class="w-4 h-4"></i> Announcements</h2>
+                        <div class="bg-secondary/30 p-4 rounded-2xl border border-white/5 mb-6">
+                            <h3 class="text-[10px] font-black text-muted mb-2 uppercase tracking-widest">Nieuw Bericht</h3>
+                            <div class="space-y-2 mb-3">
+                                <input type="text" id="hq-ann-title" placeholder="Titel" class="w-full bg-secondary border border-border rounded-lg p-2.5 outline-none focus:border-papaya text-xs text-white">
+                                <textarea id="hq-ann-content" placeholder="Inhoud..." class="w-full bg-secondary border border-border rounded-lg p-2.5 outline-none focus:border-papaya text-xs text-white h-20 custom-scrollbar"></textarea>
+                            </div>
+                            <button onclick="uiAddHQAnnouncement(event)" class="bg-papaya text-black font-bold uppercase tracking-widest text-[10px] px-4 py-2 rounded-lg hover:bg-yellow-500 transition-colors w-full"><i data-lucide="send" class="w-3 h-3 inline mr-1"></i> Plaatsen</button>
+                        </div>
+                        <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                            ${annsHtml || '<p class="text-xs text-muted italic">Geen announcements gevonden.</p>'}
+                        </div>
+                    </div>
+
+                    <div class="bg-card border border-border p-6 rounded-3xl shadow-xl">
+                        <h2 class="font-oswald text-xl text-blue-400 uppercase tracking-wide border-b border-white/10 pb-3 mb-4 flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4"></i> Mijn Notities</h2>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="hq-note-content" placeholder="Typ een prioriteit..." class="flex-1 bg-secondary border border-border rounded-lg px-3 py-2 outline-none focus:border-blue-400 text-xs text-white">
+                            <button onclick="uiAddNote(event)" class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-2 rounded-lg hover:bg-blue-500 hover:text-white transition-colors"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                            ${notesHtml || '<p class="text-xs text-muted italic text-center py-4">Geen actieve notities.</p>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ==========================================
+    // ACTION FUNCTIONS (Via Centrale Router)
+    // ==========================================
+
+    function uiSaveAdminUser(userId) {
+        const status = document.getElementById('ustatus-' + userId).value;
+        const role = document.getElementById('urole-' + userId).value;
+        const linkedId = document.getElementById('ulink-' + userId).value;
+
+        google.script.run
+            .withSuccessHandler(() => { showToast('Gebruiker geüpdatet!', 'success'); Splash.init(); })
+            .withFailureHandler(err => showToast('Fout: ' + err.message, 'error'))
+            .handlePluginAction('HQ', 'adminUpdateUser', { userId, status, role, linkedId });
+    }
+
+    function uiAddHQAnnouncement(event) {
+        const title = document.getElementById('hq-ann-title').value;
+        const content = document.getElementById('hq-ann-content').value;
+        if(!title || !content) return showToast('Vul alle velden in!', 'error');
+        
+        const btn = event.target; btn.disabled = true; btn.innerText = '...';
+        google.script.run
+            .withSuccessHandler(() => { showToast('Announcement geplaatst', 'success'); Splash.init(); navigate('hq'); })
+            .withFailureHandler(err => { showToast('Fout: ' + err.message, 'error'); btn.disabled = false; })
+            .handlePluginAction('HQ', 'addAnnouncement', { leagueId: getLeague().id, title, content });
+    }
+
+    function uiDeleteAnnouncement(id) {
+        google.script.run
+            .withSuccessHandler(() => { showToast('Verwijderd!', 'info'); Splash.init(); navigate('hq'); })
+            .withFailureHandler(err => showToast('Fout: ' + err.message, 'error'))
+            .handlePluginAction('HQ', 'deleteAnnouncement', { id });
+    }
+
+    function uiAddNote(event) {
+        const content = document.getElementById('hq-note-content').value;
+        if(!content) return showToast('Notitie is leeg!', 'error');
+        
+        const btn = event.target; btn.disabled = true;
+        google.script.run
+            .withSuccessHandler(() => { showToast('Notitie opgeslagen', 'success'); Splash.init(); navigate('hq'); })
+            .withFailureHandler(err => { showToast('Fout: ' + err.message, 'error'); btn.disabled = false; })
+            .handlePluginAction('HQ', 'addNote', { leagueId: getLeague().id, authorId: AppState.currentUser.id, content });
+    }
+
+    function uiDeleteNote(id) {
+        google.script.run
+            .withSuccessHandler(() => { Splash.init(); navigate('hq'); })
+            .withFailureHandler(err => showToast('Fout: ' + err.message, 'error'))
+            .handlePluginAction('HQ', 'deleteNote', { id });
+    }
+</script>

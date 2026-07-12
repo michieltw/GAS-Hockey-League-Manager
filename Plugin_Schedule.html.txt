@@ -1,0 +1,219 @@
+<!-- De container waar de router naar zoekt -->
+<div id="page_schedule" class="plugin-page h-full"></div>
+
+<script>
+    function renderSchedule(container) {
+        let schedule = AppState.currentLeagueId === 'all' ? MockData.schedule : MockData.schedule.filter(s => s.leagueId === AppState.currentLeagueId);
+        schedule = schedule.filter(s => (s.phase || 'Regular') === AppState.currentPhase);
+        const phases = ['Pre-Season', 'Regular', 'Playoffs'];
+        const phaseTabs = phases.map(p => `<button onclick="AppState.currentPhase='${p}'; navigate('schedule')" class="px-4 py-2 rounded-lg text-xs font-bold transition-colors uppercase tracking-widest ${AppState.currentPhase === p ? 'bg-papaya text-black' : 'text-muted hover:text-white'}">${p}</button>`).join('');
+
+        let html = `
+            <div class="max-w-5xl mx-auto space-y-6 fade-in pb-10">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-border pb-4 gap-4">
+                    <h1 class="text-3xl font-oswald uppercase tracking-wide text-white">Schema & RSVP</h1>
+                    <div class="flex items-center gap-4 w-full md:w-auto overflow-x-auto custom-scrollbar pb-2 md:pb-0">
+                        <div class="flex gap-2 bg-card border border-border p-1 rounded-xl shrink-0">${phaseTabs}</div>
+                        <div class="flex gap-2 bg-card border border-border p-1 rounded-xl shrink-0">
+                            <button onclick="AppState.scheduleViewMode='list'; navigate('schedule')" class="px-4 py-2 rounded-lg text-sm font-bold transition-colors ${AppState.scheduleViewMode==='list' ? 'bg-secondary text-white' : 'text-muted hover:text-white'}"><i data-lucide="list" class="w-4 h-4"></i></button>
+                            <button onclick="AppState.scheduleViewMode='calendar'; navigate('schedule')" class="px-4 py-2 rounded-lg text-sm font-bold transition-colors ${AppState.scheduleViewMode==='calendar' ? 'bg-secondary text-white' : 'text-muted hover:text-white'}"><i data-lucide="calendar" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+        `;
+
+        if (AppState.scheduleViewMode === 'list') {
+            const listHtml = schedule.map(s => {
+                const isGame = s.type === 'Game';
+                const home = isGame ? getTeam(s.homeTeamId) : null;
+                const away = isGame ? getTeam(s.awayTeamId) : null;
+                const isFinal = s.status === 'Final';
+                let rsvpHtml = '';
+
+                // RSVP Logica voor Spelers
+                if (!isFinal && AppState.currentUser && AppState.currentUser.role === 'Player') {
+                    const myPlayerId = AppState.currentUser.linkedId;
+                    const myPlayerObj = getPlayer(myPlayerId);
+                    const isOnTeam = (s.homeTeamId === myPlayerObj?.teamId || s.awayTeamId === myPlayerObj?.teamId);
+                    const existingRsvp = (MockData.rsvps || []).find(r => r.eventId === s.id && r.playerId === myPlayerId);
+                    const rStatus = existingRsvp ? existingRsvp.status : null;
+
+                    if (isOnTeam) {
+                        rsvpHtml = `
+                        <div class="flex flex-col gap-1 items-end ml-4 pl-4 border-l border-border shrink-0">
+                            <p class="text-[9px] uppercase tracking-widest text-muted font-bold mb-1">RSVP</p>
+                            <div class="flex gap-1">
+                                <button onclick="uiSetRSVP('${s.id}', 'Accepted')" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${rStatus === 'Accepted' ? 'bg-green-500 text-white' : 'bg-secondary text-muted hover:bg-green-500/20 hover:text-green-400'}"><i data-lucide="check" class="w-4 h-4"></i></button>
+                                <button onclick="uiSetRSVP('${s.id}', 'Declined')" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${rStatus === 'Declined' ? 'bg-red-500 text-white' : 'bg-secondary text-muted hover:bg-red-500/20 hover:text-red-400'}"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>`;
+                    } else {
+                        if (rStatus === 'Pending') rsvpHtml = `<div class="ml-4 pl-4 border-l border-border shrink-0"><span class="text-[10px] text-papaya uppercase font-bold tracking-widest border border-papaya/30 bg-papaya/10 px-2 py-1 rounded">Verzoek Ingediend</span></div>`;
+                        else if (rStatus === 'Accepted') rsvpHtml = `<div class="ml-4 pl-4 border-l border-border shrink-0"><span class="text-[10px] text-green-400 uppercase font-bold tracking-widest border border-green-400/30 bg-green-400/10 px-2 py-1 rounded">Opgeroepen</span></div>`;
+                        else rsvpHtml = `<div class="ml-4 pl-4 border-l border-border shrink-0"><button onclick="uiSetRSVP('${s.id}', 'Pending')" class="text-[10px] uppercase font-bold tracking-widest bg-secondary hover:bg-white/10 border border-border px-3 py-1.5 rounded transition-colors text-white">Als Invaller</button></div>`;
+                    }
+                } else if (!isFinal && !AppState.currentUser) {
+                    rsvpHtml = `<div class="ml-4 pl-4 border-l border-border shrink-0"><p class="text-[9px] uppercase text-muted italic">Login voor RSVP</p></div>`;
+                }
+
+                const deleteBtn = (AppState.currentUser && AppState.currentUser.role === 'Officer') ? `<button onclick="uiDeleteGame('${s.id}')" class="ml-4 w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors shrink-0" title="Verwijder Wedstrijd"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+                const gameLeague = MockData.leagues.find(l => l.id === s.leagueId);
+                const badge = AppState.currentLeagueId === 'all' && gameLeague ? `<span class="bg-white/10 text-white px-2 py-0.5 rounded text-[8px] ml-2 inline-block">${gameLeague.name}</span>` : '';
+
+                // Official / Scorekeeper rollen per wedstrijd
+                const gameRoles = (MockData.gameRoles || []).filter(r => r.gameId === s.id);
+                let rolesHtml = '';
+                let applyRolesHtml = '';
+                const isManagerOrOfficer = AppState.currentUser && (AppState.currentUser.role === 'Manager' || AppState.currentUser.role === 'Officer');
+
+                if (isGame && !isFinal && AppState.currentUser) {
+                    applyRolesHtml = `
+                    <div class="flex flex-col gap-2 mt-3 pt-3 border-t border-border">
+                        <p class="text-[9px] uppercase tracking-widest text-muted font-bold">Aanmelden als:</p>
+                        <div class="flex gap-2">
+                            <button onclick="uiApplyForGameRole('${s.id}', 'Official')" class="text-[9px] uppercase font-bold tracking-widest bg-secondary hover:bg-white/10 border border-border px-3 py-1.5 rounded transition-colors text-white">Official</button>
+                            <button onclick="uiApplyForGameRole('${s.id}', 'Scorekeeper')" class="text-[9px] uppercase font-bold tracking-widest bg-secondary hover:bg-white/10 border border-border px-3 py-1.5 rounded transition-colors text-white">Scorekeeper</button>
+                        </div>
+                    </div>`;
+                }
+
+                if (gameRoles.length > 0) {
+                    rolesHtml = `<div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border w-full">`;
+                    rolesHtml += gameRoles.map(r => {
+                        const u = MockData.users.find(x => x.id === r.userId);
+                        const name = u ? (u.name || u.username) : 'Onbekend';
+                        const statusColor = r.status === 'Approved' ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-orange-400 border-orange-400/30 bg-orange-400/10';
+
+                        let actions = '';
+                        if (isManagerOrOfficer) {
+                            actions = `
+                                ${r.status === 'Pending' ? `<button onclick="uiApproveGameRole('${r.id}')" class="ml-2 text-green-400 hover:text-white transition-colors"><i data-lucide="check" class="w-3 h-3"></i></button>` : ''}
+                                <button onclick="uiRemoveGameRole('${r.id}')" class="ml-1 text-red-400 hover:text-white transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            `;
+                        } else if (AppState.currentUser && r.userId === AppState.currentUser.id) {
+                            actions = `<button onclick="uiRemoveGameRole('${r.id}')" class="ml-2 text-red-400 hover:text-white transition-colors"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+                        }
+                        return `<div class="flex items-center text-[9px] uppercase tracking-widest border px-2 py-0.5 rounded ${statusColor}"><span class="font-bold">${r.role}:</span> <span class="ml-1">${name}</span> ${actions}</div>`;
+                    }).join('');
+                    rolesHtml += `</div>`;
+                }
+
+                const titleHtml = isGame
+                    ? `<div class="flex items-center gap-2 mt-1">
+                        ${renderTeamLogo(home, 'w-16 h-16 shrink-0', 'text-[8px]')}
+                        <span class="font-bold text-lg text-white hover:text-papaya cursor-pointer transition-colors" onclick="navigate('teamDetail', '${s.homeTeamId}')">${home ? home.name : 'TBD'}</span>
+                        <span class="text-muted mx-1 text-sm font-normal">vs</span>
+                        ${renderTeamLogo(away, 'w-16 h-16 shrink-0', 'text-[8px]')}
+                        <span class="font-bold text-lg text-white hover:text-papaya cursor-pointer transition-colors" onclick="navigate('teamDetail', '${s.awayTeamId}')">${away ? away.name : 'TBD'}</span>
+                       </div>`
+                    : `<p class="font-bold text-lg text-blue-400 mt-1">${s.name}</p>`;
+
+                return `
+                <div class="bg-card border border-border p-4 md:p-5 rounded-2xl flex flex-col mb-4 shadow-sm hover:border-papaya/30 transition-colors">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center gap-4 md:gap-6 flex-1 min-w-0">
+                            <div class="text-center pr-4 md:pr-6 border-r border-border min-w-[70px] md:min-w-[80px] shrink-0">
+                                <p class="font-mono font-bold text-white text-sm md:text-base">${s.date.substring(5)}</p>
+                                <p class="text-[10px] font-black uppercase mt-1 tracking-widest ${isFinal ? 'text-muted' : (isGame ? 'text-papaya' : 'text-blue-400')}">${isFinal ? 'Gespeeld' : s.time}</p>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center mb-0.5"><p class="text-[9px] uppercase tracking-widest text-muted font-bold">${isGame ? 'Wedstrijd' : 'Training'}</p>${badge}</div>
+                                ${titleHtml}
+                            </div>
+                        </div>
+                        <div class="flex items-center self-end md:self-auto">
+                            ${isFinal ? `<div class="text-2xl font-black text-white bg-secondary px-4 py-2 rounded-xl border border-white/5 shrink-0 ml-4">${s.homeScore || 0} - ${s.awayScore || 0}</div>` : ''}
+                            ${rsvpHtml}
+                            ${deleteBtn}
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:flex-row md:items-end justify-between">
+                        ${rolesHtml}
+                        <div class="md:ml-auto">
+                            ${applyRolesHtml}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            html += `<div>${listHtml || `<p class="text-muted text-sm py-4">Geen evenementen gepland in fase: ${AppState.currentPhase}.</p>`}</div>`;
+
+        } else {
+            // Zeer simpele kalender weergave
+            const daysInMonth = 31;
+            let gridHtml = '';
+            for(let i=0; i<5; i++) gridHtml += `<div class="aspect-square rounded-xl p-1"></div>`; // padding
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `2026-08-${d.toString().padStart(2,'0')}`;
+                const dayEvents = schedule.filter(s => s.date === dateStr);
+                if (dayEvents.length > 0) {
+                    const evHtml = dayEvents.map(e => {
+                        const isGame = e.type === 'Game';
+                        const color = isGame ? 'bg-papaya text-black' : 'bg-blue-400 text-black';
+                        return `<div class="w-full ${color} text-[8px] font-bold uppercase truncate px-1 rounded-sm mt-1 shadow-sm">${isGame ? 'Wedstrijd' : 'Training'}</div>`;
+                    }).join('');
+                    gridHtml += `<div class="aspect-square bg-secondary/50 rounded-xl p-1 border border-papaya flex flex-col relative overflow-hidden shadow-md"><span class="text-xs font-bold text-papaya m-1">${d}</span><div class="mt-auto">${evHtml}</div></div>`;
+                } else {
+                    gridHtml += `<div class="aspect-square bg-secondary/20 rounded-xl p-1 border border-border flex flex-col"><span class="text-xs font-bold text-muted m-1">${d}</span></div>`;
+                }
+            }
+            html += `<div class="bg-card border border-border rounded-2xl p-6 shadow-md"><div class="grid grid-cols-7 gap-2 text-center mb-2">${['Ma','Di','Wo','Do','Vr','Za','Zo'].map(d => `<div class="text-[10px] font-black text-muted uppercase tracking-widest">${d}</div>`).join('')}</div><div class="grid grid-cols-7 gap-2">${gridHtml}</div></div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
+    // ==========================================
+    // ACTION FUNCTIONS (Via Centrale Router)
+    // ==========================================
+
+    function uiSetRSVP(eventId, status) {
+        if (!AppState.currentUser) return;
+        const playerId = AppState.currentUser.linkedId;
+        
+        // Optimistic UI update
+        const existing = MockData.rsvps.find(r => r.eventId === eventId && r.playerId === playerId);
+        if(existing) existing.status = status;
+        else MockData.rsvps.push({ id: 'temp', eventId, playerId, status });
+        navigate('schedule');
+
+        google.script.run
+            .withSuccessHandler(() => { showToast('RSVP opgeslagen!', 'success'); Splash.init(); })
+            .withFailureHandler(err => showToast('Fout: ' + err.message, 'error'))
+            .handlePluginAction('Schedule', 'setRSVP', { eventId, playerId, status });
+    }
+
+    function uiDeleteGame(gameId) {
+        if(!confirm('Wil je deze wedstrijd definitief verwijderen?')) return;
+        document.getElementById('app-container').innerHTML = '<div class="h-full flex items-center justify-center text-red-500 font-bold"><p>Wedstrijd verwijderen...</p></div>';
+        
+        google.script.run
+            .withSuccessHandler(() => { showToast('Wedstrijd verwijderd', 'info'); Splash.init(); navigate('schedule'); })
+            .withFailureHandler(err => showToast('Fout: ' + err.message, 'error'))
+            .handlePluginAction('Schedule', 'deleteGame', { gameId });
+    }
+
+    function uiApplyForGameRole(gameId, role) {
+        if(!AppState.currentUser) return showToast('Je moet ingelogd zijn.', 'error');
+        const userId = AppState.currentUser.id;
+        
+        google.script.run
+            .withSuccessHandler((res) => { 
+                if(res.success) { showToast('Aanmelding ingediend!', 'success'); Splash.init(); navigate('schedule'); } 
+                else showToast(res.message, 'error');
+            })
+            .handlePluginAction('Schedule', 'applyGameRole', { gameId, userId, role });
+    }
+
+    function uiApproveGameRole(roleId) {
+        google.script.run
+            .withSuccessHandler(() => { showToast('Rol goedgekeurd!', 'success'); Splash.init(); navigate('schedule'); })
+            .handlePluginAction('Schedule', 'approveGameRole', { roleId });
+    }
+
+    function uiRemoveGameRole(roleId) {
+        if(!confirm('Aanmelding weigeren of verwijderen?')) return;
+        google.script.run
+            .withSuccessHandler(() => { showToast('Aanmelding verwijderd.', 'info'); Splash.init(); navigate('schedule'); })
+            .handlePluginAction('Schedule', 'removeGameRole', { roleId });
+    }
+</script>

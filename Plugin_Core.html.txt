@@ -1,0 +1,225 @@
+<script>
+    // ==========================================
+    // 1. STATE & DATA HELPERS
+    // ==========================================
+    let MockData = null;
+
+    const AppState = {
+        currentLeagueId: 'all',
+        scheduleViewMode: 'list',
+        currentPhase: 'Regular',
+        archiveData: null,
+        archiveStatus: 'idle',
+        currentUser: null
+    };
+
+    const getLeague = () => {
+        if (AppState.currentLeagueId === 'all') return { id: 'all', name: 'Alle Competities', logoUrl: '', bannerUrl: '' };
+        return MockData.leagues.find(l => l.id === AppState.currentLeagueId) || MockData.leagues[0];
+    };
+    const getTeam = (id) => MockData.teams.find(t => t.id === id);
+    const getPlayer = (id) => MockData.players.find(p => p.id === id);
+
+    const getLeagueTeams = () => {
+        if (AppState.currentLeagueId === 'all') return MockData.teams;
+        return MockData.teams.filter(t => t.leagueId === AppState.currentLeagueId);
+    };
+
+    const getLeaguePlayers = () => {
+        if (AppState.currentLeagueId === 'all') return MockData.players.filter(p => p.teamId !== null && p.teamId !== "");
+        const teamIds = getLeagueTeams().map(t => t.id);
+        return MockData.players.filter(p => teamIds.includes(p.teamId));
+    };
+
+    const getFreeAgents = () => MockData.players.filter(p => p.teamId === null || p.teamId === "");
+
+    function renderTeamLogo(team, classes = "w-10 h-10", textClasses = "text-sm") {
+        if (!team) return `<div class="${classes} rounded-xl bg-secondary flex items-center justify-center font-black shrink-0 overflow-hidden">?</div>`;
+        if (team.logoUrl && team.logoUrl.trim() !== "") return `<img src="${team.logoUrl}" class="${classes} object-contain shrink-0 drop-shadow-md" style="max-width: 100%; max-height: 100%; object-position: center;" alt="${team.name}">`;
+        return `<div class="${classes} rounded-xl flex items-center justify-center ${textClasses} font-black shadow-md border border-white/10 shrink-0 overflow-hidden" style="background-color: ${team.color || '#333'}; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${team.short || team.name.substring(0,3)}</div>`;
+    }
+
+    function formatCurrency(num) {
+        if(num === null || num === undefined) return '$0';
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+    }
+
+    function unformatCurrency(str) {
+        return Number(str.replace(/[^0-9.-]+/g,""));
+    }
+
+    function refreshIcons() {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // ==========================================
+    // 2. CORE SYSTEM & NAVIGATION
+    // ==========================================
+    function initApp() {
+        refreshIcons();
+        google.script.run
+            .withSuccessHandler(function(serverData) {
+                MockData = serverData;
+                const switcher = document.getElementById('league-switcher');
+                let optionsHtml = `<option value="all">Alle Competities</option>`;
+                optionsHtml += MockData.leagues.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+                if(switcher) {
+                    switcher.innerHTML = optionsHtml;
+                    switcher.value = AppState.currentLeagueId;
+                }
+
+                if(MockData.appSettings.appLogoUrl) {
+                    const logoContainers = [document.getElementById('splash-logo-container'), document.getElementById('sidebar-app-logo')];
+                    logoContainers.forEach(c => {
+                        if(c && c.tagName === 'IMG') c.src = MockData.appSettings.appLogoUrl;
+                        else if (c) c.innerHTML = `<img src="${MockData.appSettings.appLogoUrl}" class="w-full h-full object-contain p-2">`;
+                    });
+                }
+                if(MockData.appSettings.splashBgUrl) {
+                    const splashBg = document.getElementById('splash-bg');
+                    if(splashBg) splashBg.style.backgroundImage = `url('${MockData.appSettings.splashBgUrl}')`;
+                }
+
+                updateSidebarUser();
+                navigate('dashboard'); // Startscherm
+
+                const splashLoading = document.getElementById('splash-loading');
+                const splashActions = document.getElementById('splash-actions');
+                if(splashLoading) splashLoading.classList.add('hidden');
+                if(splashActions) {
+                    splashActions.classList.remove('hidden');
+                    splashActions.classList.add('flex');
+                }
+            })
+            .withFailureHandler(function(error) {
+                const splashLoading = document.getElementById('splash-loading');
+                if(splashLoading) splashLoading.innerHTML = `<p class="text-red-500 font-bold">Fout bij laden:<br>${error.message}</p>`;
+            })
+            .handlePluginAction('Core', 'getInitialData', null); // <--- NU GAAT HIJ NETJES VIA DE ROUTER!
+    }
+
+    function switchLeague(leagueId) {
+        AppState.currentLeagueId = leagueId;
+        const activeBtn = document.querySelector('.nav-btn.text-papaya');
+        if (activeBtn) {
+            const target = activeBtn.getAttribute('data-target');
+            if (target === 'teamDetail') navigate('teams');
+            else navigate(target);
+        } else navigate('dashboard');
+    }
+
+    // JOUW ROUTER LOGICA (Gecombineerd met de nieuwe structuur)
+    function navigate(viewId, param = null) {
+        // 1. Zorg dat de sidebar knopjes kleuren
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const target = btn.getAttribute('data-target');
+            if (target === viewId || (viewId === 'teamDetail' && target === 'teams')) {
+                btn.classList.add('bg-papaya/10', 'text-papaya', 'border-papaya/50');
+                btn.classList.remove('text-muted', 'border-border');
+            } else {
+                btn.classList.remove('bg-papaya/10', 'text-papaya', 'border-papaya/50');
+                btn.classList.add('text-muted');
+            }
+        });
+
+        // 2. Schakel naar de juiste plugin-page container via de App functie in index.html
+        // We zorgen dat de ID overeenkomt met de plugin structuur, bijv. 'page_dashboard'
+        const pageId = 'page_' + viewId;
+        if(typeof App !== 'undefined' && App.switchPage) {
+             App.switchPage(pageId);
+        }
+
+        // 3. Haal de specifieke container op
+        const viewContainer = document.getElementById(pageId);
+        if(!viewContainer) return; // Container niet gevonden, stop hier
+        
+        viewContainer.innerHTML = ''; // Leegmaken voor render
+
+        // 4. Roep jouw bestaande globale render functies aan
+        switch(viewId) {
+            case 'dashboard': if(typeof renderDashboard === 'function') renderDashboard(viewContainer); break;
+            case 'standings': if(typeof renderStandings === 'function') renderStandings(viewContainer); break;
+            case 'stats': if(typeof renderStats === 'function') renderStats(viewContainer); break;
+            case 'players': if(typeof renderPlayers === 'function') renderPlayers(viewContainer); break;
+            case 'playerDetail': if(typeof renderPlayerDetail === 'function') renderPlayerDetail(viewContainer, param); break;
+            case 'teams': if(typeof renderTeams === 'function') renderTeams(viewContainer); break;
+            case 'teamDetail': if(typeof renderTeamDetail === 'function') renderTeamDetail(viewContainer, param); break;
+            case 'schedule': if(typeof renderSchedule === 'function') renderSchedule(viewContainer); break;
+            case 'special': if(typeof renderSpecial === 'function') renderSpecial(viewContainer); break;
+            case 'archive_page': if(typeof renderArchive === 'function') renderArchive(viewContainer); break;
+            case 'hq': if(typeof renderLeagueHQ === 'function') renderLeagueHQ(viewContainer); break;
+            case 'awards_page': if(typeof renderAwards === 'function') renderAwards(viewContainer); break;
+            case 'blackout_page': if(typeof renderBlackout === 'function') renderBlackout(viewContainer); break;
+            case 'scorekeeper': if(typeof renderScorekeeper === 'function') renderScorekeeper(viewContainer); break;
+            case 'profile': if(typeof renderProfile === 'function') renderProfile(viewContainer); break;
+        }
+        refreshIcons();
+    }
+
+    function updateSidebarUser() {
+        const nameEl = document.getElementById('sidebar-user-name');
+        const roleEl = document.getElementById('sidebar-user-role');
+        const iconEl = document.getElementById('sidebar-user-icon');
+        const skBtn = document.getElementById('nav-scorekeeper');
+        const hqBtn = document.getElementById('nav-hq');
+
+        if (AppState.currentUser) {
+            if(nameEl) nameEl.textContent = AppState.currentUser.name;
+            if(roleEl) roleEl.textContent = AppState.currentUser.role;
+            if(iconEl) { iconEl.classList.remove('text-muted'); iconEl.classList.add('text-papaya'); }
+            if(hqBtn && AppState.currentUser.role === 'Officer') { hqBtn.classList.remove('hidden'); hqBtn.classList.add('flex'); } 
+            else if(hqBtn) { hqBtn.classList.add('hidden'); hqBtn.classList.remove('flex'); }
+            if(skBtn && (AppState.currentUser.role === 'Officer' || AppState.currentUser.role === 'Scorekeeper')) { skBtn.classList.remove('hidden'); skBtn.classList.add('flex'); } 
+            else if(skBtn) { skBtn.classList.add('hidden'); skBtn.classList.remove('flex'); }
+        } else {
+            if(nameEl) nameEl.textContent = 'Mijn Profiel';
+            if(roleEl) roleEl.textContent = 'Klik om in te loggen';
+            if(iconEl) { iconEl.classList.add('text-muted'); iconEl.classList.remove('text-papaya'); }
+            if(skBtn) { skBtn.classList.add('hidden'); skBtn.classList.remove('flex'); }
+            if(hqBtn) { hqBtn.classList.add('hidden'); hqBtn.classList.remove('flex'); }
+        }
+    }
+
+    // ==========================================
+    // 3. JOUW ACTION & CRUD FUNCTIES
+    // ==========================================
+    function executeLogin() {
+        const user = document.getElementById('login-user').value;
+        const pass = document.getElementById('login-pass').value;
+        if(!user || !pass) return showToast('Vul alles in a.u.b.', 'error');
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "Bezig..."; btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(function(response) {
+                btn.innerText = originalText; btn.disabled = false;
+                if (response.success) { 
+                    AppState.currentUser = response.user; 
+                    updateSidebarUser(); 
+                    navigate('profile'); 
+                }
+                else showToast(response.message, 'info');
+            })
+            .withFailureHandler(function(error) {
+                btn.innerText = originalText; btn.disabled = false; 
+                showToast('Fout bij serververbinding.', 'error');
+            })
+            .handlePluginAction('Core', 'authenticate', { username: user, pincode: pass });
+    }
+
+    function executeLogout() {
+        AppState.currentUser = null;
+        updateSidebarUser();
+        navigate('dashboard');
+    }
+
+    // (Plek voor de rest van je CRUD functies zoals uiSaveSalary, uiAddTask, etc. die je letterlijk kunt copy-pasten uit je script hier)
+    // Omdat het bericht anders te lang wordt om correct te kopiëren, plak je hier al jouw overige functies uit "3. ACTION & CRUD" en "4. SCOREKEEPER LOGIC"
+    
+    // Voer initApp uit als de DOM geladen is
+    document.addEventListener('DOMContentLoaded', () => {
+        // Init wordt in de Splash afgetrapt, of hier als backup
+        if(typeof MockData === 'undefined' || !MockData) initApp();
+    });
+</script>

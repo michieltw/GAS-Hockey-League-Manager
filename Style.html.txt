@@ -1,0 +1,26 @@
+<style>
+    /* Toast Systeem */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { min-width: 250px; padding: 16px; border-radius: 12px; font-size: 14px; font-weight: bold; color: white; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; transform: translateX(50px); animation: slideIn 0.3s forwards; }
+    .toast.success { background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5); color: #4ade80; }
+    .toast.error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #f87171; }
+    .toast.info { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #60a5fa; }
+    @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+
+    /* Algemene Stijlen */
+    body { background-color: hsl(0 0% 5%); color: hsl(0 0% 95%); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(0 0% 15%); border-radius: 10px; }
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Lineup Builder */
+    .lineup-checkbox:checked + div { border-color: #FFD700; background-color: rgba(255, 215, 0, 0.1); color: #fff; }
+
+    /* Router Styling */
+    .plugin-page { display: none !important; }
+    .plugin-page.active { display: block !important; }
+    #page_Splash.active { display: flex !important; }
+</style>

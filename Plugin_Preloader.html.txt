@@ -1,0 +1,30 @@
+<div id="page_preloader" class="hidden"></div>
+
+<script>
+    function renderPreloader(container) {
+        console.log("Preloader: Start inladen assets...");
+
+        // 1. Lijst met urls om in te laden
+        const urlsToPreload = [];
+
+        // 2. Voeg automatisch alle team logo's toe uit de huidige MockData
+        if (typeof MockData !== 'undefined' && MockData.teams) {
+            MockData.teams.forEach(team => {
+                if (team.logoUrl && team.logoUrl.trim() !== "") {
+                    urlsToPreload.push(team.logoUrl);
+                }
+            });
+        }
+
+        // 3. Voeg eventueel andere statische assets toe (bijv. achtergronden)
+        // urlsToPreload.push('https://jouw-cdn.com/achtergrond.jpg');
+
+        // 4. Voer de preload uit
+        urlsToPreload.forEach(url => {
+            const img = new Image();
+            img.src = url;
+        });
+
+        console.log(`Preloader: ${urlsToPreload.length} afbeeldingen in de wachtrij gezet.`);
+    }
+</script>

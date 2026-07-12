@@ -1,0 +1,146 @@
+function runSetup() {
+  // 1. Maak de 3 nieuwe bestanden aan in de root van je Google Drive
+  const docs = {
+    CONFIG: SpreadsheetApp.create("BH_1_Master_Config"),
+    DATA: SpreadsheetApp.create("BH_2_Data_Logic"),
+    LIVE: SpreadsheetApp.create("BH_3_Live_Engine")
+  };
+
+  // 2. Sla de nieuwe ID's direct op in je Script Properties (lost je error op!)
+  PropertiesService.getScriptProperties().setProperties({
+    'SHEET1_ID': docs.CONFIG.getId(),
+    'SHEET2_ID': docs.DATA.getId(),
+    'SHEET3_ID': docs.LIVE.getId()
+  });
+
+  const MAP = {
+    CONFIG: {
+      tabs: {
+        settings: { name: "App_Settings", cols: { key: 1, value: 2 } },
+        ui: { name: "UI_Settings", cols: { settingKey: 1, settingValue: 2, leagueId: 3, description: 4 } },
+        users: { name: "Users", cols: { userId: 1, email: 2, role: 3, linkedLeagueId: 4, status: 5 } },
+        officials: { name: "Officials", cols: { userId: 1, leagueId: 2, permissions: 3 } },
+        scorekeeper: { name: "Scorekeeper_Settings", cols: { configKey: 1, configValue: 2 } }
+      }
+    },
+    DATA: {
+      tabs: {
+        leagues: { name: "Leagues", cols: { id: 1, name: 2, season: 3, status: 4 } },
+        divisions: { name: "Divisions", cols: { id: 1, leagueId: 2, name: 3 } },
+        teams: { name: "Teams", cols: { id: 1, leagueId: 2, divId: 3, name: 4, managerId: 5, logo: 6 } },
+        players: { name: "Players", cols: { id: 1, teamId: 2, name: 3, number: 4, pos: 5, xp: 6, status: 7 } },
+        season: { name: "Season", cols: { id: 1, name: 2, startDate: 3, endDate: 4 } },
+        rulesets: { name: "Rulesets", cols: { id: 1, leagueId: 2, rulesJson: 3 } },
+        schedule: { name: "Schedule", cols: { id: 1, leagueId: 2, date: 3, time: 4, home: 5, away: 6, venue: 7 } },
+        standings: { name: "Standings", cols: { leagueId: 1, teamId: 2, played: 3, wins: 4, loss: 5, ties: 6, pts: 7 } },
+        teamStats: { name: "Team_Stats", cols: { teamId: 1, games: 2, goalsFor: 3, goalsAgainst: 4 } },
+        gameResults: { name: "Game_Results", cols: { gameId: 1, homeScore: 2, awayScore: 3, winnerId: 4 } }
+      }
+    },
+    LIVE: {
+      tabs: {
+        events: { name: "Game_Events", cols: { id: 1, gameId: 2, time: 3, type: 4, teamId: 5, playerId: 6 } },
+        gameJson: { name: "Game_Results_Json", cols: { gameId: 1, fullJson: 2 } },
+        summary: { name: "Live_Summary", cols: { gameId: 1, homeScore: 2, awayScore: 3, period: 4, status: 5 } }
+      }
+    }
+  };
+
+  // 3. Vul de sheets met tabbladen, headers en testdata
+  Object.keys(MAP).forEach(category => {
+    const doc = docs[category];
+    const tabs = MAP[category].tabs;
+
+    Object.keys(tabs).forEach(tabKey => {
+      const tabInfo = tabs[tabKey];
+      let sheet = doc.insertSheet(tabInfo.name);
+
+      // Maak de headers op basis van de kolomnummers
+      let headers = [];
+      Object.keys(tabInfo.cols).forEach(colName => {
+        headers[tabInfo.cols[colName] - 1] = colName;
+      });
+
+      // Maak slimme testdata aan
+      let testData = headers.map(h => {
+        if (!h) return '';
+        if (h === 'leagueId') return 'GLOBAL';
+        if (h === 'settingKey') return 'primaryColor';
+        if (h === 'settingValue') return '#facc15'; // Gele testkleur
+        if (h === 'email') return 'test@manager.nl';
+        if (h === 'role') return 'Admin';
+        if (h.toLowerCase().includes('id')) return '1';
+        if (h.toLowerCase().includes('score')) return '3';
+        return 'Test_' + h;
+      });
+
+      sheet.appendRow(headers);
+      sheet.appendRow(testData);
+      
+      // Maak de header vetgedrukt
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    });
+
+    // Verwijder het standaard lege 'Blad1' of 'Sheet1'
+    const defaultSheet = doc.getSheetByName("Sheet1") || doc.getSheetByName("Blad1");
+    if (defaultSheet) doc.deleteSheet(defaultSheet);
+  });
+
+  Logger.log("Succes! Sheets zijn aangemaakt en de ID's staan in je Script Properties.");
+}
+
+function addMissingTabsToExisting() {
+  const props = PropertiesService.getScriptProperties();
+  
+  // Haal het ID op van je bestaande DATA sheet
+  const dataSheetId = props.getProperty('SHEET2_ID');
+  
+  if (!dataSheetId) {
+    Logger.log("Fout: Geen bestaande DATA sheet gevonden in de instellingen.");
+    return;
+  }
+
+  const doc = SpreadsheetApp.openById(dataSheetId);
+
+  // De tabbladen en headers die we misten
+  const missingTabs = {
+    'Announcements': ['id', 'leagueId', 'title', 'content', 'date', 'authorId'],
+    'Tasks': ['id', 'leagueId', 'title', 'description', 'assignedTo', 'deadline', 'status'],
+    'RSVPs': ['id', 'eventId', 'playerId', 'status']
+  };
+
+  // Loop door de missende tabbladen heen
+  Object.keys(missingTabs).forEach(tabName => {
+    // Check of het tabblad al bestaat om dubbelingen te voorkomen
+    if (!doc.getSheetByName(tabName)) {
+      let sheet = doc.insertSheet(tabName);
+      
+      // Voeg de headers toe
+      sheet.appendRow(missingTabs[tabName]);
+      
+      // Maak de headers vetgedrukt
+      sheet.getRange(1, 1, 1, missingTabs[tabName].length).setFontWeight("bold");
+      
+      Logger.log("✅ Succesvol toegevoegd: " + tabName);
+    } else {
+      Logger.log("⚠️ Bestond al, overgeslagen: " + tabName);
+    }
+  });
+}
+
+function forceFixAdminUser() {
+  const id = PropertiesService.getScriptProperties().getProperty('SHEET1_ID');
+  const sheet = SpreadsheetApp.openById(id).getSheetByName('Users');
+  
+  // 1. Forceer de juiste headers op Rij 1
+  sheet.getRange(1, 1, 1, 8).setValues([
+    ['userId', 'email', 'role', 'linkedLeagueId', 'status', 'username', 'name', 'pincode']
+  ]);
+  
+  // 2. Forceer de admin data op Rij 2
+  sheet.getRange(2, 1, 1, 8).setValues([
+    ['u1', 'admin@league.nl', 'Officer', 'l1', 'Approved', 'admin', 'League Admin', '1234']
+  ]);
+  
+  Logger.log("✅ Actieve database geforceerd bijgewerkt met de juiste admin data!");
+}

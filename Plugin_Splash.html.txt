@@ -1,0 +1,86 @@
+<div id="page_Splash" class="plugin-page active fixed inset-0 z-[999] flex flex-col items-center justify-center p-4 bg-background transition-opacity duration-500">
+  
+  <!-- Achtergrond -->
+  <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30" style="background-image: url('https://images.unsplash.com/photo-1515781373515-467475304381?auto=format&fit=crop&q=80&w=1600&h=900');"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+
+  <!-- Content Box -->
+  <div class="relative z-10 w-full max-w-md bg-card/80 backdrop-blur-md border border-border rounded-3xl p-8 shadow-2xl text-center fade-in">
+      
+      <div id="splash-logo" class="w-24 h-24 rounded-3xl bg-base-300 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-papaya/20 overflow-hidden border border-white/10">
+          <span class="text-white font-black text-5xl">B</span>
+      </div>
+      
+      <h1 class="text-4xl font-oswald uppercase tracking-tight text-white mb-2">BLACKOUT</h1>
+      <p class="text-xs text-papaya uppercase tracking-[0.3em] font-bold mb-8">System Initializing</p>
+
+      <div class="flex flex-col items-center justify-center py-4">
+          <span class="loading loading-spinner text-papaya w-8 h-8 mb-4"></span>
+          <p id="splash-status" class="text-[10px] text-muted font-black uppercase tracking-widest">Database verbinden...</p>
+      </div>
+
+  </div>
+</div>
+
+<script>
+  const Splash = {
+    init: function() {
+      // Haal nu in één keer álle data op voor de hele app via je Core Router!
+      google.script.run
+        .withSuccessHandler(this.onDataLoaded.bind(this))
+        .withFailureHandler(function(error) {
+                document.getElementById('splash-loading').innerHTML = `<p class="text-red-500 font-bold">Fout bij laden:<br>${error.message}</p>`;
+            })
+            .handlePluginAction('Core', 'getInitialData', null); // <--- GOED
+    },
+
+    onDataLoaded: function(serverData) {
+      if (serverData && serverData.error) {
+        this.onError(serverData.error);
+        return;
+      }
+
+      // 1. Sla de data globaal op in de 'Motor' (Plugin_Core.html)
+      MockData = serverData;
+      
+      // 2. Bouw de League Switcher in je zijbalk op (als je competities hebt)
+      const switcher = document.getElementById('league-switcher');
+      if (switcher) {
+          let optionsHtml = `<option value="all">Alle Competities</option>`;
+          if(MockData.leagues && MockData.leagues.length > 0) {
+              optionsHtml += MockData.leagues.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+          }
+          switcher.innerHTML = optionsHtml;
+          switcher.value = AppState.currentLeagueId;
+      }
+
+      // Voorbeeld van waar je het aanroept:
+      function onDataLoaded(data) {
+      MockData = data;
+    
+    // Start de preloader
+    renderPreloader(document.getElementById('page_preloader'));
+    
+    // Verder met renderen...
+}
+
+      // Zorg dat de sidebar gebruiker up-to-date is
+      if(typeof updateSidebarUser === 'function') updateSidebarUser();
+
+      document.getElementById('splash-status').innerText = "Data geladen. Systeem gereed.";
+      
+      // 3. Ga na 1 seconde naar het Dashboard en teken de data!
+      setTimeout(() => {
+        App.showApp(); // Verbergt splash, toont wrapper
+        navigate('dashboard'); // Jouw nieuwe router functie die het dashboard tekent
+      }, 1000);
+    },
+
+    onError: function(err) {
+      document.getElementById('splash-status').innerHTML = `<span class="text-red-500 font-bold">Fout: ${err}</span>`;
+    }
+  };
+
+  // Start direct zodra de plugin geladen is
+  Splash.init();
+</script>

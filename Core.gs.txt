@@ -1,0 +1,160 @@
+function doGet() {
+  return HtmlService.createTemplateFromFile('index').evaluate()
+    .setTitle('Blackout Hockey Manager');
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// Centrale actie-handler voor alle plugins
+function handlePluginAction(pluginName, action, payload) {
+  try {
+    // In Core.gs, vervang de switch(action) block met deze:
+switch(action) {
+      case 'getUISettings':
+        return Database.getData('CONFIG', 'UI_Settings');
+
+      case 'getTeams':
+        return Database.getData('DATA', 'Teams'); 
+
+      case 'getStandings':
+        return Database.getData('DATA', 'Standings');
+        
+      case 'getDashboardData':
+        return {
+          results: Database.getData('DATA', 'Game_Results'),
+          schedule: Database.getData('DATA', 'Schedule'),
+          announcements: Database.getData('CONFIG', 'App_Settings'),
+          tasks: Database.getData('CONFIG', 'Users')
+        };
+
+        // ==========================================
+      // === SCHEDULE & RSVP PLUGINS ===
+      // ==========================================
+
+case 'schedule':
+                renderSchedule(document.getElementById('page_schedule'));
+                break;
+
+      case 'setRSVP': {
+        let rsvpSheet = Database.getSheet('DATA').getSheetByName('RSVPs');
+        const rsvpData = rsvpSheet.getDataRange().getValues();
+        const headers = rsvpData[0];
+        
+        // Check of speler al een RSVP heeft voor dit event
+        const rowIndex = rsvpData.findIndex((row, index) => index > 0 && row[headers.indexOf('eventId')] === payload.eventId && row[headers.indexOf('playerId')] === payload.playerId);
+        
+        if (rowIndex > -1) {
+          rsvpSheet.getRange(rowIndex + 1, headers.indexOf('status') + 1).setValue(payload.status);
+        } else {
+          const newId = 'rsvp_' + new Date().getTime();
+          rsvpSheet.appendRow([newId, payload.eventId, payload.playerId, payload.status]);
+        }
+        return { success: true };
+      }
+
+      case 'deleteGame': {
+        const schedSheet = Database.getSheet('DATA').getSheetByName('Schedule');
+        const schedData = schedSheet.getDataRange().getValues();
+        const rowIndex = schedData.findIndex(row => row[0] === payload.gameId);
+        
+        if (rowIndex > 0) {
+          schedSheet.deleteRow(rowIndex + 1);
+          return { success: true };
+        }
+        return { success: false, message: 'Wedstrijd niet gevonden.' };
+      }
+
+      case 'applyGameRole': {
+        let rolesSheet = Database.getSheet('DATA').getSheetByName('GameRoles');
+        if (!rolesSheet) {
+           rolesSheet = Database.getSheet('DATA').insertSheet('GameRoles');
+           rolesSheet.appendRow(['id', 'gameId', 'userId', 'role', 'status']);
+        }
+        
+        // Check voor duplicates
+        const rolesData = rolesSheet.getDataRange().getValues();
+        const exists = rolesData.some(row => row[1] === payload.gameId && row[2] === payload.userId && row[3] === payload.role);
+        if (exists) return { success: false, message: 'Je hebt je al aangemeld voor deze rol.' };
+
+        const newId = 'gr_' + new Date().getTime();
+        rolesSheet.appendRow([newId, payload.gameId, payload.userId, payload.role, 'Pending']);
+        return { success: true };
+      }
+
+      case 'approveGameRole': {
+        const rolesSheet = Database.getSheet('DATA').getSheetByName('GameRoles');
+        const rolesData = rolesSheet.getDataRange().getValues();
+        const headers = rolesData[0];
+        const rowIndex = rolesData.findIndex(row => row[0] === payload.roleId);
+        
+        if (rowIndex > 0) {
+          rolesSheet.getRange(rowIndex + 1, headers.indexOf('status') + 1).setValue('Approved');
+          return { success: true };
+        }
+        return { success: false };
+      }
+
+      case 'removeGameRole': {
+        const rolesSheet = Database.getSheet('DATA').getSheetByName('GameRoles');
+        const rolesData = rolesSheet.getDataRange().getValues();
+        const rowIndex = rolesData.findIndex(row => row[0] === payload.roleId);
+        
+        if (rowIndex > 0) {
+          rolesSheet.deleteRow(rowIndex + 1);
+          return { success: true };
+        }
+        return { success: false };
+      }
+
+        // === LOGIN PLUGIN ===
+      case 'authenticate': {
+        const usersList = Database.getData('CONFIG', 'Users');
+        
+        // Maak de ingevoerde naam schoon (kleine letters, geen spaties aan de zijkant)
+        const target = String(payload.username || '').trim().toLowerCase();
+        
+        const authUser = usersList.find(u => 
+          String(u.username || '').trim().toLowerCase() === target || 
+          String(u.name || '').trim().toLowerCase() === target
+        );
+        
+        if (!authUser) {
+           // DEBUG: Dit laat op je scherm zien wáár het misgaat!
+           const dbUsernames = usersList.map(u => u.username).join(', ');
+           return { 
+             success: false, 
+             message: `Gezocht naar: '${target}'. In de database staat: [${dbUsernames}]` 
+           };
+        }
+        
+        if (payload.pincode !== '1234') {
+          return { success: false, message: 'Onjuiste pincode ingevoerd.' };
+        }
+        
+        return { success: true, user: authUser };
+      }
+
+      // === NIEUW: Haalt alles op voor de nieuwe App structuur ===
+      case 'getInitialData':
+        return {
+          leagues: Database.getData('DATA', 'Leagues') || [{id: 'l1', name: 'Blackout League'}],
+          teams: Database.getData('DATA', 'Teams') || [],
+          players: Database.getData('DATA', 'Players') || [],
+          schedule: Database.getData('DATA', 'Schedule') || [],
+          standings: Database.getData('DATA', 'Standings') || [],
+          announcements: Database.getData('DATA', 'Announcements') || [],
+          tasks: Database.getData('DATA', 'Tasks') || [],
+          users: Database.getData('CONFIG', 'Users') || [],
+          rsvps: Database.getData('DATA', 'RSVPs') || [],
+          appSettings: { appLogoUrl: '', splashBgUrl: '' }
+        };
+        
+      default:
+        return { error: "Actie niet gevonden" };
+    }
+  } catch (e) {
+    return { error: e.toString() };
+  }
+}

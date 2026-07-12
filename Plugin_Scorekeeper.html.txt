@@ -1,0 +1,61 @@
+<!-- De container waar de router naar zoekt -->
+<div id="page_scorekeeper" class="plugin-page h-full"></div>
+
+<script>
+    function renderScorekeeper(container) {
+        // Alleen Scorekeepers, Officers en Managers mogen hier in
+        if(!AppState.currentUser || !['Scorekeeper', 'Officer', 'Manager'].includes(AppState.currentUser.role)) {
+            return container.innerHTML = `<div class="p-8 text-center"><p class="text-red-400 font-bold">Je hebt geen toegang tot de Scorekeeper Console.</p></div>`;
+        }
+
+        // Zoek wedstrijden van vandaag of geplande wedstrijden
+        let games = MockData.schedule.filter(s => s.type === 'Game' && s.status !== 'Final');
+
+        let html = `
+            <div class="max-w-6xl mx-auto space-y-6 fade-in pb-10">
+                <div class="border-b border-border pb-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-papaya/10 rounded-xl flex items-center justify-center text-papaya border border-papaya/20"><i data-lucide="monitor" class="w-6 h-6"></i></div>
+                    <div>
+                        <h1 class="text-3xl font-oswald uppercase tracking-wide text-white">Wedstrijdtafel Console</h1>
+                        <p class="text-[10px] text-muted tracking-widest uppercase mt-1 font-bold">Selecteer een wedstrijd om te starten</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        `;
+
+        if(games.length === 0) {
+            html += `<p class="text-muted col-span-full">Geen openstaande wedstrijden gevonden.</p>`;
+        } else {
+            html += games.map(g => {
+                const home = getTeam(g.homeTeamId);
+                const away = getTeam(g.awayTeamId);
+                return `
+                <div class="bg-card border border-border p-5 rounded-2xl shadow hover:border-papaya transition-colors">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-[10px] font-mono text-muted">${g.date} | ${g.time}</span>
+                        <span class="px-2 py-1 bg-secondary text-white text-[8px] font-bold uppercase rounded">ID: ${g.id}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 mb-6">
+                        <div class="text-center w-1/3"><p class="font-bold text-white truncate">${home ? home.name : 'TBD'}</p></div>
+                        <div class="text-muted text-xs font-bold w-1/3 text-center">VS</div>
+                        <div class="text-center w-1/3"><p class="font-bold text-white truncate">${away ? away.name : 'TBD'}</p></div>
+                    </div>
+                    <button onclick="startScorekeeperConsole('${g.id}')" class="w-full bg-papaya text-black font-bold uppercase tracking-widest text-[10px] py-2.5 rounded-lg hover:bg-yellow-500 transition-colors">
+                        Start Console
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        html += `</div></div>`;
+        container.innerHTML = html;
+        refreshIcons();
+    }
+
+    function startScorekeeperConsole(gameId) {
+        // Hier bouwen we straks in stap 3 de daadwerkelijke wedstrijd-interface!
+        alert("We openen straks de console voor wedstrijd: " + gameId);
+    }
+</script>

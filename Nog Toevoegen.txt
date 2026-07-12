@@ -1,0 +1,45 @@
+
+Editor
+Setup_Testdata.gs
+Code.gs
+Map.gs
+Database.gs
+Core.gs
+index.html
+Style.html
+Plugin_Splash.html
+Plugin_Dashboard.html
+Plugin_Teams.html
+Plugin_Standings.html
+Plugin_Core.html
+Plugin_Profile.html
+Plugin_HQ.html
+Plugin_Schedule.html
+Plugin_Scorekeeper.html
+Plugin_Stats.html
+Plugin_Players.html
+Plugin_Awards.html
+Plugin_Archive.html
+Plugin_Special.html
+Plugin_Blackout.html
+Plugin_PlayerDetail.html
+Plugin_TeamDetail.html
+Plugin_Core_Logic.html
+Plugin_Preloader.html
+Nog toevoegen.html
+.
+
+1234567891011121314151617181920212223242526
+//1. State & Data Helpers (De Kern / Fundering)
+Deze sectie beheert het "geheugen" van de applicatie en bevat slimme zoekfuncties.
+
+Globale Statusbeheer (AppState): Houdt bij welke league geselecteerd is, of het schema in 'lijst' of 'kalender' modus staat, of we in het Reguliere seizoen of de Playoffs zitten, en wie er momenteel is ingelogd.
+
+Data Getters: Functies om direct specifieke data op te halen, zoals getLeague, getTeam, en getPlayer.
+…keuren en te koppelen aan speler-ID's).
+
+Scorekeeper Console (renderScorekeeper): De frontend-interface voor de Scorekeeper Logic. Bestaat uit dropdowns voor het kiezen van de openstaande wedstrijd, een interface voor het toevoegen van acties (met tijd, periode, coördinaten), een live logboek (tabel) van de ingevoerde acties, en een eindrapportage blok. Bevat ook een (nog inactieve) knop om data vanuit andere iScout-apps in te laden.//
+const AppState
+No results
+
+No results found for 'const AppState'
