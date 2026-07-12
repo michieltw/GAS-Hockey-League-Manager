@@ -168,23 +168,23 @@
 
         // 4. Roep jouw bestaande globale render functies aan of toon placeholder
         switch(viewId) {
-            case 'dashboard': if(typeof renderDashboard === 'function') renderDashboard(viewContainer); break;
-            case 'schedule': if(typeof renderSchedule === 'function') renderSchedule(viewContainer); break;
-            case 'hq': if(typeof renderLeagueHQ === 'function') renderLeagueHQ(viewContainer); break;
-            case 'scorekeeper': if(typeof renderScorekeeper === 'function') renderScorekeeper(viewContainer); break;
-            case 'profile': if(typeof renderProfile === 'function') renderProfile(viewContainer); break;
+            case 'dashboard': if(typeof renderDashboard === 'function') { renderDashboard(viewContainer); } break;
+            case 'schedule': if(typeof renderSchedule === 'function') { renderSchedule(viewContainer); } break;
+            case 'hq': if(typeof renderLeagueHQ === 'function') { renderLeagueHQ(viewContainer); } break;
+            case 'scorekeeper': if(typeof renderScorekeeper === 'function') { renderScorekeeper(viewContainer); } break;
+            case 'profile': if(typeof renderProfile === 'function') { renderProfile(viewContainer); } break;
 
-            // Placeholders
-            case 'standings': renderPlaceholder(viewContainer, 'Klassement', 'trophy'); break;
-            case 'stats': renderPlaceholder(viewContainer, 'Statistieken', 'bar-chart-2'); break;
-            case 'players': renderPlaceholder(viewContainer, 'Spelers', 'users'); break;
-            case 'playerDetail': renderPlaceholder(viewContainer, 'Speler Details', 'user', 'text-papaya', `ID: ${param || 'Geen'}`); break;
-            case 'teams': renderPlaceholder(viewContainer, 'Teams', 'shield'); break;
-            case 'teamDetail': renderPlaceholder(viewContainer, 'Team Details', 'shield', 'text-papaya', `ID: ${param || 'Geen'}`); break;
-            case 'special': renderPlaceholder(viewContainer, 'Special', 'star'); break;
-            case 'archive_page': renderPlaceholder(viewContainer, 'Archief', 'archive'); break;
-            case 'awards_page': renderPlaceholder(viewContainer, 'Awards', 'award'); break;
-            case 'blackout_page': renderPlaceholder(viewContainer, 'Blackout', 'power', 'text-red-500'); break;
+            // Extensible Plugins with fallback
+            case 'standings': if(typeof renderStandings === 'function') { renderStandings(viewContainer); } else { renderPlaceholder(viewContainer, 'Klassement', 'trophy'); } break;
+            case 'stats': if(typeof renderStats === 'function') { renderStats(viewContainer); } else { renderPlaceholder(viewContainer, 'Statistieken', 'bar-chart-2'); } break;
+            case 'players': if(typeof renderPlayers === 'function') { renderPlayers(viewContainer); } else { renderPlaceholder(viewContainer, 'Spelers', 'users'); } break;
+            case 'playerDetail': if(typeof renderPlayerDetail === 'function') { renderPlayerDetail(viewContainer, param); } else { renderPlaceholder(viewContainer, 'Speler Details', 'user', 'text-papaya', `ID: ${param || 'Geen'}`); } break;
+            case 'teams': if(typeof renderTeams === 'function') { renderTeams(viewContainer); } else { renderPlaceholder(viewContainer, 'Teams', 'shield'); } break;
+            case 'teamDetail': if(typeof renderTeamDetail === 'function') { renderTeamDetail(viewContainer, param); } else { renderPlaceholder(viewContainer, 'Team Details', 'shield', 'text-papaya', `ID: ${param || 'Geen'}`); } break;
+            case 'special': if(typeof renderSpecial === 'function') { renderSpecial(viewContainer); } else { renderPlaceholder(viewContainer, 'Special', 'star'); } break;
+            case 'archive_page': if(typeof renderArchive === 'function') { renderArchive(viewContainer); } else { renderPlaceholder(viewContainer, 'Archief', 'archive'); } break;
+            case 'awards_page': if(typeof renderAwards === 'function') { renderAwards(viewContainer); } else { renderPlaceholder(viewContainer, 'Awards', 'award'); } break;
+            case 'blackout_page': if(typeof renderBlackout === 'function') { renderBlackout(viewContainer); } else { renderPlaceholder(viewContainer, 'Blackout', 'power', 'text-red-500'); } break;
         }
         refreshIcons();
     }
