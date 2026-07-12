@@ -1,6 +1,6 @@
 <script>
     // ==========================================
-    // 1. STATE & DATA HELPERS (now mostly in Logic but we keep MockData and AppState here for core setup)
+    // 1. STATE & DATA HELPERS
     // ==========================================
     let MockData = null;
 
@@ -14,7 +14,77 @@
     };
 
     // ==========================================
-    // 2. CORE SYSTEM & NAVIGATION
+    // 2. DATA RELATIE HELPERS
+    // ==========================================
+    const getLeague = () => {
+        if (!MockData || !MockData.leagues) return { id: 'all', name: 'Geen data', logoUrl: '', bannerUrl: '' };
+        if (AppState.currentLeagueId === 'all') return { id: 'all', name: 'Alle Competities', logoUrl: '', bannerUrl: '' };
+        return MockData.leagues.find(l => l.id === AppState.currentLeagueId) || MockData.leagues[0];
+    };
+
+    const getTeam = (id) => MockData.teams.find(t => t.id === id) || null;
+
+    const getPlayer = (id) => MockData.players.find(p => p.id === id) || null;
+
+    const getLeagueTeams = () => {
+        if (!MockData || !MockData.teams) return [];
+        if (AppState.currentLeagueId === 'all') return MockData.teams;
+        return MockData.teams.filter(t => t.leagueId === AppState.currentLeagueId);
+    };
+
+    const getLeaguePlayers = () => {
+        if (!MockData || !MockData.players) return [];
+        if (AppState.currentLeagueId === 'all') return MockData.players.filter(p => p.teamId);
+        const teamIds = getLeagueTeams().map(t => t.id);
+        return MockData.players.filter(p => teamIds.includes(p.teamId));
+    };
+
+    const getFreeAgents = () => {
+        if (!MockData || !MockData.players) return [];
+        return MockData.players.filter(p => !p.teamId);
+    };
+
+    // ==========================================
+    // 3. GLOBALE UI & FORMATTING HELPERS
+    // ==========================================
+    function renderTeamLogo(team, classes = "w-10 h-10", textClasses = "text-sm") {
+        if (!team) return `<div class="${classes} rounded-xl bg-secondary border border-border flex items-center justify-center font-black shrink-0 text-muted shadow-sm">?</div>`;
+        if (team.logoUrl && team.logoUrl.trim() !== "") return `<img src="${team.logoUrl.trim()}" class="${classes} object-contain shrink-0 drop-shadow-md" alt="${team.name}" onerror="this.onerror=null; this.outerHTML='<div class=\'${classes} rounded-xl bg-secondary flex items-center justify-center font-black text-white\'>${team.short || team.name.substring(0,3)}</div>';">`;
+
+        return `<div class="${classes} rounded-xl flex items-center justify-center ${textClasses} font-black shadow-md border border-white/10 shrink-0 overflow-hidden" style="background-color: ${team.color || '#333'}; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">${team.short || team.name.substring(0,3)}</div>`;
+    }
+
+    function formatCurrency(num) {
+        if (!num || isNaN(num)) return '$0';
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+    }
+
+    function unformatCurrency(str) {
+        if (!str || typeof str !== 'string') return 0;
+        const parsed = Number(str.replace(/[^0-9.-]+/g, ""));
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    function refreshIcons() {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function renderPlaceholder(container, title, icon, colorClass="text-papaya", extraText="") {
+        container.innerHTML = `
+            <div class="max-w-4xl mx-auto p-8 fade-in text-center mt-10">
+                <div class="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 border border-border">
+                    <i data-lucide="${icon}" class="w-8 h-8 ${colorClass}"></i>
+                </div>
+                <h1 class="text-3xl font-oswald uppercase tracking-wide text-white mb-2">${title}</h1>
+                ${extraText ? `<p class="text-muted mb-2">${extraText}</p>` : ''}
+                <p class="text-muted mt-2">De inhoud van deze module richten we later in.</p>
+            </div>
+        `;
+        refreshIcons();
+    }
+
+    // ==========================================
+    // 4. CORE SYSTEM & NAVIGATION
     // ==========================================
     function initApp() {
         refreshIcons();
@@ -96,23 +166,25 @@
 
         viewContainer.innerHTML = ''; // Leegmaken voor render
 
-        // 4. Roep jouw bestaande globale render functies aan
+        // 4. Roep jouw bestaande globale render functies aan of toon placeholder
         switch(viewId) {
             case 'dashboard': if(typeof renderDashboard === 'function') renderDashboard(viewContainer); break;
-            case 'standings': if(typeof renderStandings === 'function') renderStandings(viewContainer); break;
-            case 'stats': if(typeof renderStats === 'function') renderStats(viewContainer); break;
-            case 'players': if(typeof renderPlayers === 'function') renderPlayers(viewContainer); break;
-            case 'playerDetail': if(typeof renderPlayerDetail === 'function') renderPlayerDetail(viewContainer, param); break;
-            case 'teams': if(typeof renderTeams === 'function') renderTeams(viewContainer); break;
-            case 'teamDetail': if(typeof renderTeamDetail === 'function') renderTeamDetail(viewContainer, param); break;
             case 'schedule': if(typeof renderSchedule === 'function') renderSchedule(viewContainer); break;
-            case 'special': if(typeof renderSpecial === 'function') renderSpecial(viewContainer); break;
-            case 'archive_page': if(typeof renderArchive === 'function') renderArchive(viewContainer); break;
             case 'hq': if(typeof renderLeagueHQ === 'function') renderLeagueHQ(viewContainer); break;
-            case 'awards_page': if(typeof renderAwards === 'function') renderAwards(viewContainer); break;
-            case 'blackout_page': if(typeof renderBlackout === 'function') renderBlackout(viewContainer); break;
             case 'scorekeeper': if(typeof renderScorekeeper === 'function') renderScorekeeper(viewContainer); break;
             case 'profile': if(typeof renderProfile === 'function') renderProfile(viewContainer); break;
+
+            // Placeholders
+            case 'standings': renderPlaceholder(viewContainer, 'Klassement', 'trophy'); break;
+            case 'stats': renderPlaceholder(viewContainer, 'Statistieken', 'bar-chart-2'); break;
+            case 'players': renderPlaceholder(viewContainer, 'Spelers', 'users'); break;
+            case 'playerDetail': renderPlaceholder(viewContainer, 'Speler Details', 'user', 'text-papaya', `ID: ${param || 'Geen'}`); break;
+            case 'teams': renderPlaceholder(viewContainer, 'Teams', 'shield'); break;
+            case 'teamDetail': renderPlaceholder(viewContainer, 'Team Details', 'shield', 'text-papaya', `ID: ${param || 'Geen'}`); break;
+            case 'special': renderPlaceholder(viewContainer, 'Special', 'star'); break;
+            case 'archive_page': renderPlaceholder(viewContainer, 'Archief', 'archive'); break;
+            case 'awards_page': renderPlaceholder(viewContainer, 'Awards', 'award'); break;
+            case 'blackout_page': renderPlaceholder(viewContainer, 'Blackout', 'power', 'text-red-500'); break;
         }
         refreshIcons();
     }
@@ -142,7 +214,7 @@
     }
 
     // ==========================================
-    // 3. JOUW ACTION & CRUD FUNCTIES
+    // 5. JOUW ACTION & CRUD FUNCTIES
     // ==========================================
     function executeLogin() {
         const user = document.getElementById('login-user').value;
@@ -174,9 +246,6 @@
         updateSidebarUser();
         navigate('dashboard');
     }
-
-    // (Plek voor de rest van je CRUD functies zoals uiSaveSalary, uiAddTask, etc. die je letterlijk kunt copy-pasten uit je script hier)
-    // Omdat het bericht anders te lang wordt om correct te kopiëren, plak je hier al jouw overige functies uit "3. ACTION & CRUD" en "4. SCOREKEEPER LOGIC"
 
     // Voer initApp uit als de DOM geladen is
     document.addEventListener('DOMContentLoaded', () => {
