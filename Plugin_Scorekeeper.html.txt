@@ -46,13 +46,18 @@
         let games = MockData.schedule.filter(s => s.type === 'Game' && s.status !== 'Final');
 
         let html = `
-            <div class="max-w-6xl mx-auto space-y-6 fade-in pb-10">
-                <div class="border-b border-border pb-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-papaya/10 rounded-xl flex items-center justify-center text-papaya border border-papaya/20"><i data-lucide="monitor" class="w-6 h-6"></i></div>
-                    <div>
-                        <h1 class="text-3xl font-oswald uppercase tracking-wide text-white">Wedstrijdtafel Console</h1>
-                        <p class="text-[10px] text-muted tracking-widest uppercase mt-1 font-bold">Selecteer een wedstrijd om te starten</p>
+            <div id="sk-schedule-list" class="max-w-6xl mx-auto space-y-6 fade-in pb-10">
+                <div class="border-b border-border pb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-papaya/10 rounded-xl flex items-center justify-center text-papaya border border-papaya/20"><i data-lucide="monitor" class="w-6 h-6"></i></div>
+                        <div>
+                            <h1 class="text-3xl font-oswald uppercase tracking-wide text-white">Wedstrijdtafel Console</h1>
+                            <p class="text-[10px] text-muted tracking-widest uppercase mt-1 font-bold">Selecteer een wedstrijd om te starten</p>
+                        </div>
                     </div>
+                    <button onclick="showCustomGameForm()" class="bg-primary text-black font-bold uppercase tracking-widest text-[10px] px-4 py-2 rounded-lg hover:bg-yellow-500 transition-colors flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Create Custom Game
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -84,14 +89,337 @@
         }
 
         html += `</div></div>`;
+
+        // Custom Game Form UI
+        html += `
+            <div id="sk-custom-form" class="max-w-6xl mx-auto space-y-6 fade-in pb-10 hidden">
+                <div class="border-b border-border pb-4 flex items-center gap-4">
+                    <button onclick="hideCustomGameForm()" class="w-12 h-12 bg-surface rounded-xl flex items-center justify-center text-muted border border-border hover:bg-surface-variant transition-colors"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                    <div>
+                        <h1 class="text-3xl font-oswald uppercase tracking-wide text-white">Create Custom Game</h1>
+                        <p class="text-[10px] text-muted tracking-widest uppercase mt-1 font-bold">Configure game settings</p>
+                    </div>
+                </div>
+
+                <div class="bg-card border border-border rounded-2xl p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Teams -->
+                        <div class="space-y-4 col-span-full md:col-span-2 lg:col-span-3">
+                            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">Teams</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-muted mb-1">Home Team</label>
+                                    <select id="cg-home-team" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                        <option value="">Select Home Team</option>
+                                        ${MockData.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-muted mb-1">Away Team</label>
+                                    <select id="cg-away-team" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                        <option value="">Select Away Team</option>
+                                        ${MockData.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- General Settings -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">General Settings</h3>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Season</label>
+                                <input type="text" id="cg-season" class="w-full bg-surface border border-border rounded p-2 text-white" placeholder="e.g. 2023-2024">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">League</label>
+                                <select id="cg-league" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="">Select League</option>
+                                    ${MockData.leagues.map(l => `<option value="${l.id}">${l.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Division</label>
+                                <input type="text" id="cg-division" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Ruleset</label>
+                                <input type="text" id="cg-ruleset" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Schedule ID</label>
+                                <input type="text" id="cg-schedule-id" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Game Date</label>
+                                <input type="date" id="cg-game-date" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Game Start Time</label>
+                                <input type="time" id="cg-game-start-time" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                        </div>
+
+                        <!-- Timing & Periods -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">Timing & Periods</h3>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Timing</label>
+                                <select id="cg-timing" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Live Sync">Live synchronization with game clock</option>
+                                    <option value="Manual">Manual</option>
+                                    <option value="Event Driven">Event driven</option>
+                                    <option value="Off">Off</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Periods</label>
+                                <select id="cg-periods" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3" selected>3</option>
+                                    <option value="Custom">Custom</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Period Length 1</label>
+                                <select id="cg-period-length-1" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Standard">Standard</option>
+                                    <option value="Custom">Custom</option>
+                                    <option value="No-Clock">No-Clock</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Period Length 2</label>
+                                <input type="text" id="cg-period-length-2" class="w-full bg-surface border border-border rounded p-2 text-white" placeholder="Standard">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Period Length 3</label>
+                                <input type="text" id="cg-period-length-3" class="w-full bg-surface border border-border rounded p-2 text-white" placeholder="Standard">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Penalty Clock Keeps Running</label>
+                                <select id="cg-penalty-clock" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Off">Off</option>
+                                    <option value="On">On</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Penalty Registration</label>
+                                <select id="cg-penalty-registration" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Time">Time</option>
+                                    <option value="Time + Type">Time + Type</option>
+                                    <option value="Only Type">Only Type</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Extra Settings (OT, Shootout, Roster) -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">OT & Extras</h3>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Enable OT</label>
+                                <select id="cg-enable-ot" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">OT Periods</label>
+                                <select id="cg-ot-periods" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="1">1</option>
+                                    <option value="Continue">Continue</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">OT Period Length</label>
+                                <input type="text" id="cg-ot-period-length" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Enable Shootout</label>
+                                <select id="cg-enable-shootout" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Shootout Attempts</label>
+                                <input type="number" id="cg-shootout-attempts" class="w-full bg-surface border border-border rounded p-2 text-white" value="3">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Rotate Shooters</label>
+                                <select id="cg-rotate-shooters" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Yes">Yes</option>
+                                    <option value="No">No</option>
+                                </select>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2 mt-4">Attendance & Rosters</h3>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Counted Attendance</label>
+                                <input type="number" id="cg-counted-attendance" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Official Attendance</label>
+                                <input type="number" id="cg-official-attendance" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Officials</label>
+                                <input type="text" id="cg-officials" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Scorekeeper (type to confirm)</label>
+                                <input type="text" id="cg-scorekeeper" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Rosters</label>
+                                <input type="text" id="cg-rosters" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Lines</label>
+                                <input type="text" id="cg-lines" class="w-full bg-surface border border-border rounded p-2 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Salary Cap</label>
+                                <select id="cg-salary-cap" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Off">Off</option>
+                                    <option value="On">On</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Autobalance teams</label>
+                                <select id="cg-autobalance" class="w-full bg-surface border border-border rounded p-2 text-white">
+                                    <option value="Off">Off</option>
+                                    <option value="On">On (this overwrites the Rosters)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-muted mb-1">Game MVP</label>
+                                <input type="text" id="cg-game-mvp" class="w-full bg-surface border border-border rounded p-2 text-white" placeholder="Pick a player at the end of the game">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-end">
+                        <button onclick="submitCustomGame()" class="bg-papaya text-black font-bold uppercase tracking-widest text-[12px] px-8 py-3 rounded-lg hover:bg-yellow-500 transition-colors">
+                            Start Custom Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
         container.innerHTML = html;
         refreshIcons();
     }
 
-    function startScorekeeperConsole(gameId) {
+    window.showCustomGameForm = function() {
+        document.getElementById('sk-schedule-list').classList.add('hidden');
+        document.getElementById('sk-custom-form').classList.remove('hidden');
+    };
+
+    window.hideCustomGameForm = function() {
+        document.getElementById('sk-schedule-list').classList.remove('hidden');
+        document.getElementById('sk-custom-form').classList.add('hidden');
+    };
+
+    window.submitCustomGame = function() {
+        const homeTeamId = document.getElementById('cg-home-team').value;
+        const awayTeamId = document.getElementById('cg-away-team').value;
+
+        if(!homeTeamId || !awayTeamId) {
+            alert('Please select both a Home Team and an Away Team.');
+            return;
+        }
+        if(homeTeamId === awayTeamId) {
+            alert('Home and Away teams cannot be the same.');
+            return;
+        }
+
+        const customConfig = {
+            isCustom: true,
+            homeTeamId,
+            awayTeamId,
+            season: document.getElementById('cg-season').value,
+            leagueId: document.getElementById('cg-league').value,
+            division: document.getElementById('cg-division').value,
+            ruleset: document.getElementById('cg-ruleset').value,
+            scheduleId: document.getElementById('cg-schedule-id').value,
+            periodLength1: document.getElementById('cg-period-length-1').value,
+            periodLength2: document.getElementById('cg-period-length-2').value,
+            periodLength3: document.getElementById('cg-period-length-3').value,
+            periods: document.getElementById('cg-periods').value,
+            enableOt: document.getElementById('cg-enable-ot').value,
+            otPeriods: document.getElementById('cg-ot-periods').value,
+            otPeriodLength: document.getElementById('cg-ot-period-length').value,
+            enableShootout: document.getElementById('cg-enable-shootout').value,
+            shootoutAttempts: document.getElementById('cg-shootout-attempts').value,
+            rotateShooters: document.getElementById('cg-rotate-shooters').value,
+            gameDate: document.getElementById('cg-game-date').value,
+            gameStartTime: document.getElementById('cg-game-start-time').value,
+            countedAttendance: document.getElementById('cg-counted-attendance').value,
+            officialAttendance: document.getElementById('cg-official-attendance').value,
+            officials: document.getElementById('cg-officials').value,
+            scorekeeper: document.getElementById('cg-scorekeeper').value,
+            rosters: document.getElementById('cg-rosters').value,
+            lines: document.getElementById('cg-lines').value,
+            salaryCap: document.getElementById('cg-salary-cap').value,
+            autobalance: document.getElementById('cg-autobalance').value,
+            gameMvp: document.getElementById('cg-game-mvp').value,
+            timing: document.getElementById('cg-timing').value,
+            penaltyRegistration: document.getElementById('cg-penalty-registration').value,
+            penaltyClock: document.getElementById('cg-penalty-clock').value
+        };
+
+        startScorekeeperConsole('custom', customConfig);
+    };
+
+    function startScorekeeperConsole(gameId, customConfig = null) {
         // Hier bouwen we straks in stap 3 de daadwerkelijke wedstrijd-interface!
 
         const container = document.getElementById('page_scorekeeper');
+
+        let homeTeamId = 'LII';
+        let awayTeamId = 'TOR';
+
+        if (gameId === 'custom' && customConfig) {
+            homeTeamId = customConfig.homeTeamId;
+            awayTeamId = customConfig.awayTeamId;
+        } else if (gameId) {
+            const scheduledGame = MockData.schedule.find(s => s.id === gameId);
+            if (scheduledGame) {
+                homeTeamId = scheduledGame.homeTeamId;
+                awayTeamId = scheduledGame.awayTeamId;
+            }
+        }
+
+        const homeTeam = getTeam(homeTeamId) || { id: homeTeamId, name: homeTeamId, shortName: homeTeamId.substring(0,3).toUpperCase(), color: '#e67e22' };
+        const awayTeam = getTeam(awayTeamId) || { id: awayTeamId, name: awayTeamId, shortName: awayTeamId.substring(0,3).toUpperCase(), color: '#004b8d' };
+
+        const htId = homeTeam.id;
+        const atId = awayTeam.id;
+        const htShort = homeTeam.shortName || homeTeam.name.substring(0,3).toUpperCase();
+        const atShort = awayTeam.shortName || awayTeam.name.substring(0,3).toUpperCase();
+        const htInitial = htShort.charAt(0);
+        const atInitial = atShort.charAt(0);
+        const htColor = homeTeam.color || '#e67e22';
+        const atColor = awayTeam.color || '#004b8d';
+
+
+
+        // Inject dynamic colors
+        const styleId = 'dynamic-scorekeeper-colors';
+        let styleEl = document.getElementById(styleId);
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            document.head.appendChild(styleEl);
+        }
+        styleEl.innerHTML = `
+            .bg-sk-team-home { background-color: ${htColor} !important; }
+            .bg-sk-team-away { background-color: ${atColor} !important; }
+            .border-sk-team-home { border-color: ${htColor} !important; }
+            .border-sk-team-away { border-color: ${atColor} !important; }
+        `;
 
         // Render the UI
         container.innerHTML = `<div id="sk-wrapper" class="bg-sk-background text-sk-on-background w-full h-full flex flex-col overflow-hidden relative">
@@ -124,8 +452,8 @@
 </button>
 <div class="hidden bg-sk-surface-container-low p-3 border-t border-sk-outline-variant" id="faceoff-options">
 <div class="flex gap-2">
-<button class="faceoff-log-btn flex-1 py-2 bg-sk-team-lii text-white rounded font-button-text shadow-sm" data-team="LII">Win LII</button>
-<button class="faceoff-log-btn flex-1 py-2 bg-sk-team-tor text-white rounded font-button-text shadow-sm" data-team="TOR">Win TOR</button>
+<button class="faceoff-log-btn flex-1 py-2 bg-sk-team-home text-white rounded font-button-text shadow-sm" data-team="${htId}">Win ${htShort}</button>
+<button class="faceoff-log-btn flex-1 py-2 bg-sk-team-away text-white rounded font-button-text shadow-sm" data-team="${atId}">Win ${atShort}</button>
 </div>
 </div>
 </div>
@@ -137,8 +465,8 @@
 </button>
 <div class="hidden bg-sk-surface-container-low p-3 border-t border-sk-outline-variant flex flex-col gap-3" id="penalty-options">
 <div class="flex gap-2">
-<button class="penalty-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors bg-sk-surface-variant border-sk-primary font-bold" data-team="LII">Team LII</button>
-<button class="penalty-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors" data-team="TOR">Team TOR</button>
+<button class="penalty-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors bg-sk-surface-variant border-sk-primary font-bold" data-team="${htId}">Team ${htShort}</button>
+<button class="penalty-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors" data-team="${atId}">Team ${atShort}</button>
 </div>
 <select class="penalty-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
 <option value="">Select Player...</option>
@@ -162,8 +490,8 @@
 </button>
 <div class="hidden bg-sk-surface-container-low p-3 border-t border-sk-outline-variant flex flex-col gap-3" id="goal-options">
 <div class="flex gap-2">
-<button class="goal-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors bg-sk-surface-variant border-sk-primary font-bold" data-team="LII">Team LII</button>
-<button class="goal-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors" data-team="TOR">Team TOR</button>
+<button class="goal-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors bg-sk-surface-variant border-sk-primary font-bold" data-team="${htId}">Team ${htShort}</button>
+<button class="goal-team-btn flex-1 py-1 border border-sk-outline-variant rounded hover:bg-sk-surface-variant transition-colors" data-team="${atId}">Team ${atShort}</button>
 </div>
 <select class="goal-log-select w-full p-2 border border-sk-outline-variant rounded bg-sk-surface">
 <option value="">Scorer...</option>
@@ -200,7 +528,7 @@
 </button>
 <div class="flex flex-col">
 <div class="flex items-center gap-2">
-<div class="w-6 h-6 bg-sk-team-tor text-white font-headline-md rounded flex items-center justify-center font-bold">T</div>
+<div class="w-6 h-6 bg-sk-team-away text-white font-headline-md rounded flex items-center justify-center font-bold">T</div>
 <h1 class="text-headline-lg-mobile font-headline-lg font-bold">LII vs TOR</h1>
 </div>
 <span class="text-body-sm text-sk-on-primary-container opacity-80">October 15, 2024</span>
@@ -212,25 +540,25 @@
 </div>
 <!-- Score Board Area -->
 <div class="flex w-full h-24 bg-sk-surface-container-high border-y border-sk-outline-variant relative">
-<!-- LII (Home) -->
-<div class="flex-1 bg-sk-team-lii flex flex-col items-center justify-center relative">
-<span class="text-score-display font-score-display text-white absolute left-4">L</span>
-<span class="text-score-display font-score-display text-white" id="score-lii">2</span>
+<!-- Home Team -->
+<div class="flex-1 bg-sk-team-home flex flex-col items-center justify-center relative">
+<span class="text-score-display font-score-display text-white absolute left-4">${htInitial}</span>
+<span class="text-score-display font-score-display text-white" id="score-home">2</span>
 </div>
 <!-- Center Info -->
 <div class="w-32 bg-sk-surface flex flex-col items-center justify-center z-10 px-2 py-1 shadow-sm border-x border-sk-outline-variant">
 <span class="text-headline-md font-headline-md text-sk-on-surface">1st</span>
 <span class="text-headline-lg font-headline-lg text-sk-on-surface font-bold" id="match-clock">01:58</span>
 <div class="flex justify-between w-full mt-1 text-label-caps font-label-caps text-sk-on-surface-variant px-2">
-<span id="shots-lii">15 shots</span>
-<span id="shots-tor">12 shots</span>
+<span id="shots-home">15 shots</span>
+<span id="shots-away">12 shots</span>
 </div>
 </div>
-<!-- TOR (Away) -->
-<div class="flex-1 bg-sk-team-tor flex flex-col items-center justify-center relative">
-<span class="text-score-display font-score-display text-white" id="score-tor">4</span>
+<!-- Away Team -->
+<div class="flex-1 bg-sk-team-away flex flex-col items-center justify-center relative">
+<span class="text-score-display font-score-display text-white" id="score-away">4</span>
 <div class="absolute right-4 w-10 h-10 border-2 border-white rounded bg-transparent flex items-center justify-center">
-<span class="text-headline-lg font-headline-lg text-white font-bold">T</span>
+<span class="text-headline-lg font-headline-lg text-white font-bold">${atInitial}</span>
 </div>
 </div>
 </div>
@@ -270,8 +598,8 @@
 <div class="bg-sk-surface border border-sk-outline-variant rounded-xl p-4 shadow-sm flex flex-col gap-4">
 <h3 class="text-headline-md font-headline-md text-sk-on-surface">Rosters</h3>
 <div class="flex gap-4">
-<button class="flex-1 py-2 border border-sk-outline-variant rounded-lg bg-sk-team-lii text-white font-bold">Edit LII Roster</button>
-<button class="flex-1 py-2 border border-sk-outline-variant rounded-lg bg-sk-team-tor text-white font-bold">Edit TOR Roster</button>
+<button class="flex-1 py-2 border border-sk-outline-variant rounded-lg bg-sk-team-home text-white font-bold">Edit ${htShort} Roster</button>
+<button class="flex-1 py-2 border border-sk-outline-variant rounded-lg bg-sk-team-away text-white font-bold">Edit ${atShort} Roster</button>
 </div>
 </div>
 </div>
@@ -373,7 +701,7 @@
 <h3 class="text-headline-md font-headline-md text-sk-on-surface">1st period</h3>
 <!-- Event Card -->
 <div class="flex items-center gap-4 bg-sk-surface-container-high p-3 rounded-lg border border-sk-outline-variant">
-<div class="w-12 h-12 rounded-full bg-sk-team-tor flex items-center justify-center shadow-sm">
+<div class="w-12 h-12 rounded-full bg-sk-team-away flex items-center justify-center shadow-sm">
 <span class="text-headline-lg font-headline-lg text-white font-bold">T</span>
 </div>
 <div class="flex-1 flex flex-col">
@@ -385,7 +713,7 @@
 </div>
 <!-- Dummy Event Card -->
 <div class="flex items-center gap-4 bg-sk-surface-container-high p-3 rounded-lg border border-sk-outline-variant opacity-70">
-<div class="w-12 h-12 rounded-full bg-sk-team-lii flex items-center justify-center shadow-sm">
+<div class="w-12 h-12 rounded-full bg-sk-team-home flex items-center justify-center shadow-sm">
 <span class="text-headline-lg font-headline-lg text-white font-bold">L</span>
 </div>
 <div class="flex-1 flex flex-col">
@@ -416,25 +744,49 @@
 </div>`;
 
         // Initialize logic
-        initScorekeeperUI();
+        initScorekeeperUI(gameId, customConfig);
 
     }
 
-    function initScorekeeperUI() {
+    function initScorekeeperUI(gameId, customConfig) {
+        let homeTeamId = 'LII';
+        let awayTeamId = 'TOR';
+
+        if (gameId === 'custom' && customConfig) {
+            homeTeamId = customConfig.homeTeamId;
+            awayTeamId = customConfig.awayTeamId;
+        } else if (gameId) {
+            const scheduledGame = MockData.schedule.find(s => s.id === gameId);
+            if (scheduledGame) {
+                homeTeamId = scheduledGame.homeTeamId;
+                awayTeamId = scheduledGame.awayTeamId;
+            }
+        }
+
+        const homeTeam = getTeam(homeTeamId) || { id: homeTeamId, name: homeTeamId, shortName: homeTeamId.substring(0,3).toUpperCase() };
+        const awayTeam = getTeam(awayTeamId) || { id: awayTeamId, name: awayTeamId, shortName: awayTeamId.substring(0,3).toUpperCase() };
+
+        const htId = homeTeam.id;
+        const atId = awayTeam.id;
+        const htShort = homeTeam.shortName || homeTeam.name.substring(0,3).toUpperCase();
+        const atShort = awayTeam.shortName || awayTeam.name.substring(0,3).toUpperCase();
+        const htInitial = htShort.charAt(0);
+        const atInitial = atShort.charAt(0);
+
 // --- State Management ---
             const AppState = {
                 clockSeconds: 118,
                 isRunning: false,
                 clockInterval: null,
-                stats: {
-                    LII: { shots: 15, score: 2 },
-                    TOR: { shots: 12, score: 4 }
-                },
+                stats: {},
                 ui: {
-                    selectedPenaltyTeam: 'LII',
-                    selectedGoalTeam: 'LII'
+                    selectedPenaltyTeam: htId,
+                    selectedGoalTeam: htId
                 }
             };
+            AppState.stats[htId] = { shots: 15, score: 2 };
+            AppState.stats[atId] = { shots: 12, score: 4 };
+
 
             // --- DOM Elements ---
             const DOM = {
@@ -445,10 +797,10 @@
                     btnMinus: document.getElementById('btn-minus-1s')
                 },
                 scoreboard: {
-                    liiScore: document.getElementById('score-lii'),
-                    torScore: document.getElementById('score-tor'),
-                    liiShots: document.getElementById('shots-lii'),
-                    torShots: document.getElementById('shots-tor')
+                    homeScore: document.getElementById('score-home'),
+                    awayScore: document.getElementById('score-away'),
+                    homeShots: document.getElementById('shots-home'),
+                    awayShots: document.getElementById('shots-away')
                 },
                 rink: {
                     container: document.getElementById('interactive-rink'),
@@ -530,12 +882,12 @@
                 const y = e.clientY - rect.top;
 
                 const pctX = (x / rect.width) * 100;
-                const team = pctX < 50 ? 'LII' : 'TOR';
-                const color = team === 'LII' ? '#e67e22' : '#004b8d';
+                const team = pctX < 50 ? htId : atId;
+                const color = team === htId ? '#e67e22' : '#004b8d';
 
                 AppState.stats[team].shots++;
-                if (team === 'LII') DOM.scoreboard.liiShots.textContent = `${AppState.stats.LII.shots} shots`;
-                else DOM.scoreboard.torShots.textContent = `${AppState.stats.TOR.shots} shots`;
+                if (team === htId) DOM.scoreboard.homeShots.textContent = `${AppState.stats[htId].shots} shots`;
+                else DOM.scoreboard.awayShots.textContent = `${AppState.stats[atId].shots} shots`;
 
                 GASHooks.logEvent('SHOT_RECORDED', { team, x, y });
 
@@ -655,12 +1007,12 @@
             // Feed Updates
             function addEventToFeed(team, title, subtitle, badgeText = '') {
                 const timeStr = DOM.clock.main.textContent;
-                const isLii = team === 'LII';
-                const teamInitial = isLii ? 'L' : 'T';
-                const bgClass = isLii ? 'bg-team-lii' : 'bg-team-tor';
-                const textClass = isLii ? 'text-team-lii' : 'text-team-tor';
+                const isHome = team === htId;
+                const teamInitial = isHome ? htInitial : atInitial;
+                const bgClass = isHome ? 'bg-team-lii' : 'bg-team-tor';
+                const textClass = isHome ? 'text-team-lii' : 'text-team-tor';
 
-                const scoreStr = `LII ${AppState.stats.LII.score} - TOR ${AppState.stats.TOR.score}`;
+                const scoreStr = `${htShort} ${AppState.stats[htId].score} - ${atShort} ${AppState.stats[atId].score}`;
 
                 const eventCard = document.createElement('div');
                 eventCard.className = 'flex items-center gap-4 bg-surface-container-high p-3 rounded-lg border border-outline-variant';
@@ -738,8 +1090,8 @@
                 const team = AppState.ui.selectedGoalTeam;
                 AppState.stats[team].score++;
 
-                if (team === 'LII') DOM.scoreboard.liiScore.textContent = AppState.stats.LII.score;
-                else DOM.scoreboard.torScore.textContent = AppState.stats.TOR.score;
+                if (team === htId) DOM.scoreboard.homeScore.textContent = AppState.stats[htId].score;
+                else DOM.scoreboard.awayScore.textContent = AppState.stats[atId].score;
 
                 addEventToFeed(team, `${scorer}`, assistText, 'GOAL');
                 GASHooks.logEvent('GOAL_LOGGED', { team, scorer, assistText });

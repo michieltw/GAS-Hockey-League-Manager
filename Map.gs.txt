@@ -4,21 +4,21 @@ const MAP = {
     sheetId: "SHEET1_ID",
     tabs: {
       settings: { name: "App_Settings", cols: { key: 1, value: 2 } },
-      ui: { 
-        name: "UI_Settings", 
-        cols: { 
+      ui: {
+        name: "UI_Settings",
+        cols: {
           settingKey: 1,      // Bijv: 'APP_LOGO', 'LEAGUE_BG', 'LEAGUE_PRIMARY_COLOR'
           settingValue: 2,    // De URL of de kleurcode
           leagueId: 3,        // 'GLOBAL' voor app-wide, of een specifieke 'LEAGUE-XXX'
           description: 4      // Voor je eigen administratie
-        } 
+        }
       },
       users: { name: "Users", cols: { userId: 1, email: 2, role: 3, linkedLeagueId: 4, status: 5 } },
       officials: { name: "Officials", cols: { userId: 1, leagueId: 2, permissions: 3 } },
       scorekeeper: { name: "Scorekeeper_Settings", cols: { configKey: 1, configValue: 2 } }
     }
   },
-  
+
   // SHEET 2: DATA & LOGIC
   DATA: {
     sheetId: "SHEET2_ID",
@@ -32,10 +32,19 @@ const MAP = {
       schedule: { name: "Schedule", cols: { id: 1, leagueId: 2, date: 3, time: 4, home: 5, away: 6, venue: 7 } },
       standings: { name: "Standings", cols: { leagueId: 1, teamId: 2, played: 3, wins: 4, loss: 5, ties: 6, pts: 7 } },
       teamStats: { name: "Team_Stats", cols: { teamId: 1, games: 2, goalsFor: 3, goalsAgainst: 4 } },
-      gameResults: { name: "Game_Results", cols: { gameId: 1, homeScore: 2, awayScore: 3, winnerId: 4 } }
+      gameResults: { name: "Game_Results", cols: { gameId: 1, homeScore: 2, awayScore: 3, winnerId: 4 } },
+      customGames: { name: "Custom_Games", cols: {
+        id: 1, homeTeamId: 2, awayTeamId: 3, season: 4, leagueId: 5, division: 6, ruleset: 7,
+        scheduleId: 8, periodLength1: 9, periodLength2: 10, periodLength3: 11, periods: 12,
+        enableOt: 13, otPeriods: 14, otPeriodLength: 15, enableShootout: 16, shootoutAttempts: 17,
+        rotateShooters: 18, gameDate: 19, gameStartTime: 20, countedAttendance: 21,
+        officialAttendance: 22, officials: 23, scorekeeper: 24, rosters: 25, lines: 26,
+        salaryCap: 27, autobalance: 28, gameMvp: 29, timing: 30, penaltyRegistration: 31,
+        penaltyClock: 32
+      } }
     }
   },
-  
+
   // SHEET 3: LIVE ENGINE
   LIVE: {
     sheetId: "SHEET3_ID",
