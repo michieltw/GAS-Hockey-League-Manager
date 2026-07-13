@@ -14,7 +14,54 @@ function runSetup() {
   });
 
 
-  // 3. Vul de sheets met tabbladen, headers en testdata
+  // 3. Fake data structuren per sheet
+  const seedData = {
+    'Leagues': [
+      ['l1', 'Blackout League', '2024', 'Active', 'https://via.placeholder.com/150', 'https://via.placeholder.com/800x200']
+    ],
+    'Teams': [
+      ['LII', 'l1', 'div1', 'Leiden Lions', 'u1', 'https://via.placeholder.com/50'],
+      ['TOR', 'l1', 'div1', 'Toronto', 'u2', 'https://via.placeholder.com/50']
+    ],
+    'Players': [
+      ['p1', 'LII', 'John Doe', '99', 'F', '100', 'Active'],
+      ['p2', 'LII', 'Jane Smith', '88', 'D', '50', 'Active'],
+      ['p3', 'TOR', 'Bob Brown', '77', 'G', '20', 'Active']
+    ],
+    'Users': [
+      ['u1', 'admin@league.nl', 'Officer', 'l1', 'Approved', 'admin', 'League Admin', '1234', '', 'p1'],
+      ['u2', 'user@league.nl', 'Player', 'l1', 'Approved', 'user', 'Normal User', '1234', 'TOR', 'p3']
+    ],
+    'Schedule': [
+      ['G-001', 'l1', '2024-10-01', '19:00', 'LII', 'TOR', 'Game', 'Final', 'Regular', '3', '2'],
+      ['G-002', 'l1', '2024-10-08', '20:00', 'TOR', 'LII', 'Game', 'Final', 'Regular', '1', '4'],
+      ['G-003', 'l1', '2024-10-15', '19:00', 'LII', 'TOR', 'Game', 'Upcoming', 'Regular', '', ''],
+      ['G-004', 'l1', '2024-10-22', '20:00', 'TOR', 'LII', 'Game', 'Upcoming', 'Regular', '', ''],
+      ['G-005', 'l1', '2024-10-29', '19:00', 'LII', 'TOR', 'Game', 'Upcoming', 'Playoffs', '', '']
+    ],
+    'Standings': [
+      ['l1', 'LII', '2', '2', '0', '0', '4'],
+      ['l1', 'TOR', '2', '0', '2', '0', '0']
+    ],
+    'Announcements': [
+      ['a1', 'l1', 'Welkom', 'Welkom bij de Blackout League!', '2024-09-01', 'u1']
+    ],
+    'Tasks': [
+      ['t1', 'l1', 'Zaal regelen', 'Zorg voor een zaal voor de finale.', 'u1', '2024-11-01', 'Pending']
+    ],
+    'RSVPs': [
+      ['r1', 'G-003', 'p1', 'Attending'],
+      ['r2', 'G-003', 'p3', 'Declined']
+    ],
+    'GameRoles': [
+      ['gr1', 'G-003', 'u1', 'Scorekeeper', 'Approved']
+    ],
+    'Notes': [
+      ['n1', 'u1', 'Vergeet de pucks niet', '2024-10-10']
+    ]
+  };
+
+  // 4. Vul de sheets met tabbladen, headers en testdata
   Object.keys(MAP).forEach(category => {
     const doc = docs[category];
     const tabs = MAP[category].tabs;
@@ -43,8 +90,18 @@ function runSetup() {
       });
 
       sheet.appendRow(headers);
-      sheet.appendRow(testData);
-      
+
+      // Vul de rijen als er seedData is, anders één generieke fake row
+      if (seedData[tabInfo.name]) {
+        seedData[tabInfo.name].forEach(row => {
+          // Zorg dat de array net zo lang is als de headers
+          let paddedRow = headers.map((h, i) => row[i] !== undefined ? row[i] : '');
+          sheet.appendRow(paddedRow);
+        });
+      } else {
+        sheet.appendRow(testData);
+      }
+
       // Maak de header vetgedrukt
       sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
     });
@@ -59,10 +116,10 @@ function runSetup() {
 
 function addMissingTabsToExisting() {
   const props = PropertiesService.getScriptProperties();
-  
+
   // Haal het ID op van je bestaande DATA sheet
   const dataSheetId = props.getProperty('SHEET2_ID');
-  
+
   if (!dataSheetId) {
     Logger.log("Fout: Geen bestaande DATA sheet gevonden in de instellingen.");
     return;
@@ -74,7 +131,9 @@ function addMissingTabsToExisting() {
   const missingTabs = {
     'Announcements': ['id', 'leagueId', 'title', 'content', 'date', 'authorId'],
     'Tasks': ['id', 'leagueId', 'title', 'description', 'assignedTo', 'deadline', 'status'],
-    'RSVPs': ['id', 'eventId', 'playerId', 'status']
+    'RSVPs': ['id', 'eventId', 'playerId', 'status'],
+    'GameRoles': ['id', 'gameId', 'userId', 'role', 'status'],
+    'Notes': ['id', 'authorId', 'content', 'date']
   };
 
   // Loop door de missende tabbladen heen
@@ -82,13 +141,13 @@ function addMissingTabsToExisting() {
     // Check of het tabblad al bestaat om dubbelingen te voorkomen
     if (!doc.getSheetByName(tabName)) {
       let sheet = doc.insertSheet(tabName);
-      
+
       // Voeg de headers toe
       sheet.appendRow(missingTabs[tabName]);
-      
+
       // Maak de headers vetgedrukt
       sheet.getRange(1, 1, 1, missingTabs[tabName].length).setFontWeight("bold");
-      
+
       Logger.log("✅ Succesvol toegevoegd: " + tabName);
     } else {
       Logger.log("⚠️ Bestond al, overgeslagen: " + tabName);
@@ -99,16 +158,16 @@ function addMissingTabsToExisting() {
 function forceFixAdminUser() {
   const id = PropertiesService.getScriptProperties().getProperty('SHEET1_ID');
   const sheet = SpreadsheetApp.openById(id).getSheetByName('Users');
-  
+
   // 1. Forceer de juiste headers op Rij 1
   sheet.getRange(1, 1, 1, 8).setValues([
     ['userId', 'email', 'role', 'linkedLeagueId', 'status', 'username', 'name', 'pincode']
   ]);
-  
+
   // 2. Forceer de admin data op Rij 2
   sheet.getRange(2, 1, 1, 8).setValues([
     ['u1', 'admin@league.nl', 'Officer', 'l1', 'Approved', 'admin', 'League Admin', '1234']
   ]);
-  
+
   Logger.log("✅ Actieve database geforceerd bijgewerkt met de juiste admin data!");
 }

@@ -13,7 +13,7 @@ const MAP = {
           description: 4      // Voor je eigen administratie
         }
       },
-      users: { name: "Users", cols: { userId: 1, email: 2, role: 3, linkedLeagueId: 4, status: 5 } },
+      users: { name: "Users", cols: { userId: 1, email: 2, role: 3, linkedLeagueId: 4, status: 5, username: 6, name: 7, pincode: 8, reqTeamId: 9, linkedId: 10 } },
       officials: { name: "Officials", cols: { userId: 1, leagueId: 2, permissions: 3 } },
       scorekeeper: { name: "Scorekeeper_Settings", cols: { configKey: 1, configValue: 2 } }
     }
@@ -23,16 +23,21 @@ const MAP = {
   DATA: {
     sheetId: "SHEET2_ID",
     tabs: {
-      leagues: { name: "Leagues", cols: { id: 1, name: 2, season: 3, status: 4 } },
+      leagues: { name: "Leagues", cols: { id: 1, name: 2, season: 3, status: 4, logoUrl: 5, bannerUrl: 6 } },
       divisions: { name: "Divisions", cols: { id: 1, leagueId: 2, name: 3 } },
       teams: { name: "Teams", cols: { id: 1, leagueId: 2, divId: 3, name: 4, managerId: 5, logo: 6 } },
       players: { name: "Players", cols: { id: 1, teamId: 2, name: 3, number: 4, pos: 5, xp: 6, status: 7 } },
       season: { name: "Season", cols: { id: 1, name: 2, startDate: 3, endDate: 4 } },
       rulesets: { name: "Rulesets", cols: { id: 1, leagueId: 2, rulesJson: 3 } },
-      schedule: { name: "Schedule", cols: { id: 1, leagueId: 2, date: 3, time: 4, home: 5, away: 6, venue: 7 } },
+      schedule: { name: "Schedule", cols: { id: 1, leagueId: 2, date: 3, time: 4, homeTeamId: 5, awayTeamId: 6, type: 7, status: 8, phase: 9, homeScore: 10, awayScore: 11 } },
       standings: { name: "Standings", cols: { leagueId: 1, teamId: 2, played: 3, wins: 4, loss: 5, ties: 6, pts: 7 } },
       teamStats: { name: "Team_Stats", cols: { teamId: 1, games: 2, goalsFor: 3, goalsAgainst: 4 } },
       gameResults: { name: "Game_Results", cols: { gameId: 1, homeScore: 2, awayScore: 3, winnerId: 4 } },
+      announcements: { name: "Announcements", cols: { id: 1, leagueId: 2, title: 3, content: 4, date: 5, authorId: 6 } },
+      tasks: { name: "Tasks", cols: { id: 1, leagueId: 2, title: 3, description: 4, assignedTo: 5, deadline: 6, status: 7 } },
+      rsvps: { name: "RSVPs", cols: { id: 1, eventId: 2, playerId: 3, status: 4 } },
+      gameRoles: { name: "GameRoles", cols: { id: 1, gameId: 2, userId: 3, role: 4, status: 5 } },
+      notes: { name: "Notes", cols: { id: 1, authorId: 2, content: 3, date: 4 } },
       customGames: { name: "Custom_Games", cols: {
         id: 1, homeTeamId: 2, awayTeamId: 3, season: 4, leagueId: 5, division: 6, ruleset: 7,
         scheduleId: 8, periodLength1: 9, periodLength2: 10, periodLength3: 11, periods: 12,
