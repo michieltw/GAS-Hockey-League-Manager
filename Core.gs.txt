@@ -138,6 +138,8 @@ function handlePluginAction(pluginName, action, payload) {
           tasks: Database.getData('DATA', 'Tasks') || [],
           users: Database.getData('CONFIG', 'Users') || [],
           rsvps: Database.getData('DATA', 'RSVPs') || [],
+          gameRoles: Database.getData('DATA', 'GameRoles') || [],
+          notes: Database.getData('DATA', 'Notes') || [],
           appSettings: { appLogoUrl: '', splashBgUrl: '' }
         };
 
